@@ -1,0 +1,5 @@
+import type {A2UIVersion, GenerationOutput, ProviderId, ValidationResult, VersionAnalysis} from '../../src/core/types';
+export interface PreviewDocument { surfaceId: string; version: A2UIVersion; theme: Record<string, string>; data: Record<string, unknown>; components: Record<string, Record<string, unknown>>; rootId: string; functionCalls: unknown[]; }
+export async function fetchAnalysis(): Promise<{versions: VersionAnalysis[]; providers: ProviderId[]}> { const response = await fetch('/api/analysis'); return response.json(); }
+export async function generate(prompt: string, version: A2UIVersion, provider: ProviderId): Promise<GenerationOutput> { const response = await fetch('/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt, version, provider }) }); return response.json(); }
+export async function validate(version: A2UIVersion, source: string): Promise<{validation: ValidationResult; preview: PreviewDocument}> { const response = await fetch('/api/validate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ version, source }) }); return response.json(); }
