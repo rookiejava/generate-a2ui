@@ -36,6 +36,11 @@ export async function generateA2ui(options: GenerateOptions): Promise<Generation
         validation = await validateMessages(options.version, messages);
       }
 
+      if (!validation.valid) {
+        const summary = issuesToLines(validation.issues).slice(0, 5).join('; ');
+        throw new Error(`Live provider output failed schema validation after retry (${summary})`);
+      }
+
       return {
         version: options.version,
         prompt: options.prompt,
@@ -73,6 +78,7 @@ export async function generateA2ui(options: GenerateOptions): Promise<Generation
     usedModel,
   };
 }
+
 
 
 
