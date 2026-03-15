@@ -5,3 +5,4 @@ const VERSION_DIRS: Record<A2UIVersion, string> = { 'v0.8': 'v0_8', 'v0.9': 'v0_
 export function getSpecificationRoot(): string { return process.env.A2UI_SPEC_ROOT ?? path.resolve('.tmp-a2ui-upstream/specification'); }
 export function getVersionSpecificationPath(version: A2UIVersion): string { return path.join(getSpecificationRoot(), VERSION_DIRS[version]); }
 export async function readVersionFile(version: A2UIVersion, relativePath: string): Promise<string> { return fs.readFile(path.join(getVersionSpecificationPath(version), relativePath), 'utf8'); }
+export async function readVersionJson(version: A2UIVersion, relativePath: string): Promise<any> { return JSON.parse(await readVersionFile(version, relativePath)); }
