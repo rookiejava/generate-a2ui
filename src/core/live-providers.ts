@@ -14,6 +14,18 @@ const OUTPUT_SCHEMA = {
   required: ['messages'],
 };
 
+const GEMINI_OUTPUT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    messages: {
+      type: 'ARRAY',
+      items: {type: 'OBJECT'},
+    },
+  },
+  required: ['messages'],
+};
+
+
 function getOpenAIModel(runtime?: ProviderRuntimeConfig): string {
   return runtime?.openaiModel ?? process.env.OPENAI_MODEL ?? 'gpt-4.1-mini';
 }
@@ -112,7 +124,7 @@ async function callGemini(system: string, user: string, runtime?: ProviderRuntim
       generationConfig: {
         temperature: 0.2,
         responseMimeType: 'application/json',
-        responseSchema: OUTPUT_SCHEMA,
+        responseSchema: GEMINI_OUTPUT_SCHEMA,
       },
     }),
   });
@@ -177,6 +189,7 @@ export async function generateWithLiveProvider(
 
   throw new Error(`Unsupported live provider: ${provider}`);
 }
+
 
 
 
