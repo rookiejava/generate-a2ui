@@ -48,11 +48,12 @@ export async function generateA2ui(options: GenerateOptions): Promise<Generation
         validation,
         usedModel,
       };
-    } catch {
+    } catch (error) {
       actualProvider = 'fallback';
       usedModel = false;
       model = undefined;
-      providerReason = `Live call to ${resolution.effective} failed at runtime; fallback generator was used`;
+      const detail = error instanceof Error ? error.message : 'Unknown runtime error';
+      providerReason = `Live call to ${resolution.effective} failed at runtime (${detail}); fallback generator was used`;
     }
   }
 
@@ -72,3 +73,6 @@ export async function generateA2ui(options: GenerateOptions): Promise<Generation
     usedModel,
   };
 }
+
+
+

@@ -40,6 +40,29 @@ function parseJson(text: string): unknown[] {
   throw new Error('Model response was not a valid A2UI message list');
 }
 
+async function readErrorDetail(response: Response): Promise<string> {
+  const fallback = `${response.status}`;
+  try {
+    const text = await response.text();
+    if (!text) return fallback;
+
+    try {
+      const payload = JSON.parse(text) as any;
+      const detail =
+        payload?.error?.message
+        ?? payload?.error?.status
+        ?? payload?.message
+        ?? payload?.error;
+      if (typeof detail === 'string' && detail.trim()) return `${response.status}: ${detail.trim()}`;
+      return `${response.status}: ${text.slice(0, 240)}`;
+    } catch {
+      return `${response.status}: ${text.slice(0, 240)}`;
+    }
+  } catch {
+    return fallback;
+  }
+}
+
 async function callOpenAI(system: string, user: string, runtime?: ProviderRuntimeConfig): Promise<unknown[]> {
   const apiKey = runtime?.openaiApiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OpenAI API key is missing');
@@ -67,7 +90,10 @@ async function callOpenAI(system: string, user: string, runtime?: ProviderRuntim
       },
     }),
   });
-  if (!response.ok) throw new Error(`OpenAI request failed with status ${response.status}`);
+  if (!response.ok) {
+    const detail = await readErrorDetail(response);
+    throw new Error('OpenAI request failed (' + detail + ')');
+  }
   const payload: any = await response.json();
   return parseJson(payload.choices?.[0]?.message?.content ?? '');
 }
@@ -90,7 +116,10 @@ async function callGemini(system: string, user: string, runtime?: ProviderRuntim
       },
     }),
   });
-  if (!response.ok) throw new Error(`Gemini request failed with status ${response.status}`);
+  if (!response.ok) {
+    const detail = await readErrorDetail(response);
+    throw new Error('Gemini request failed (' + detail + ')');
+  }
   const payload: any = await response.json();
   const text = payload.candidates?.[0]?.content?.parts?.map((part: any) => part.text ?? '').join('') ?? '';
   return parseJson(text);
@@ -120,7 +149,10 @@ async function callClaude(system: string, user: string, runtime?: ProviderRuntim
       tool_choice: {type: 'tool', name: 'emit_a2ui_messages'},
     }),
   });
-  if (!response.ok) throw new Error(`Claude request failed with status ${response.status}`);
+  if (!response.ok) {
+    const detail = await readErrorDetail(response);
+    throw new Error('Claude request failed (' + detail + ')');
+  }
   const payload: any = await response.json();
   const toolUse = payload.content?.find((item: any) => item.type === 'tool_use' && item.name === 'emit_a2ui_messages');
   if (!toolUse?.input) throw new Error('Claude did not return tool output');
@@ -145,3 +177,7 @@ export async function generateWithLiveProvider(
 
   throw new Error(`Unsupported live provider: ${provider}`);
 }
+
+
+
+
