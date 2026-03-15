@@ -4,7 +4,9 @@ body { margin: 0; font-family: "IBM Plex Sans KR", "Segoe UI", sans-serif; color
 button, select, textarea, input { font: inherit; }
 #root { min-height: 100vh; }
 .workspace-shell { padding: 18px 24px 24px; }
-.top-nav { display: flex; gap: 10px; padding: 0 0 14px; align-items: center; }
+.top-nav { display: flex; justify-content: space-between; gap: 10px; padding: 0 0 14px; align-items: center; }
+.app-title { margin: 0; font-size: 1.1rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.top-nav-tabs { display: flex; gap: 10px; }
 .top-nav button { background: white; color: var(--ink); border-color: var(--line); }
 .top-nav button.active { background: var(--accent-strong); color: white; border-color: transparent; }
 .settings-page { padding: 0 0 8px; }
@@ -25,6 +27,7 @@ button:disabled { opacity: 0.62; cursor: not-allowed; }
 .validation { display: inline-flex; border-radius: 999px; padding: 8px 12px; font-weight: 700; }
 .validation.ok { background: rgba(15, 118, 110, 0.14); color: #0f766e; }
 .validation.bad { background: rgba(185, 28, 28, 0.12); color: #b91c1c; }
+.validation.neutral { background: rgba(107, 114, 128, 0.16); color: #374151; }
 .action-status.error { border-color: rgba(185, 28, 28, 0.35); color: #991b1b; background: rgba(254, 242, 242, 0.92); }
 .action-status.info { display: grid; gap: 6px; }
 .muted { color: var(--muted); }
@@ -68,3 +71,9 @@ button:disabled { opacity: 0.62; cursor: not-allowed; }
 .controls.compact { justify-content: flex-end; }
 .icon-button { width: 36px; height: 36px; border-radius: 999px; display: inline-grid; place-items: center; padding: 0; font-size: 18px; line-height: 1; }
 .icon-button:disabled { opacity: 0.45; }
+
+.settings-section { padding: 8px 0 14px; }
+.settings-section + .settings-section { border-top: 1px dashed var(--line); padding-top: 16px; margin-top: 8px; }
+.settings-section h3 { margin: 0 0 10px; }
+
+

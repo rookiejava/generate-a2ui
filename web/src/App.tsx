@@ -12,6 +12,7 @@ const DEFAULT_PROMPT_BY_LANG: Record<Language, string> = {
 
 const SETTINGS_STORAGE_KEY = 'a2ui.runtimeSettings.v1';
 const LANGUAGE_STORAGE_KEY = 'a2ui.language.v1';
+const APP_TITLE = 'A2UI STUDIO';
 
 type Page = 'studio' | 'settings';
 type Language = 'ko' | 'en' | 'es' | 'ja' | 'zh';
@@ -49,7 +50,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     connected: '연결 상태', notRun: '아직 Generate를 실행하지 않았습니다.', currentSelected: '현재 선택',
     liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use',
     prompt: 'Prompt', source: 'A2UI Source', versionNotes: 'Version Notes', rendererNotes: 'Renderer Notes',
-    validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected',
+    validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected', schemaUnknown: 'Validation required',
     generate: 'Generate', generating: 'Generating...', validate: 'Validate', validating: 'Validating...',
     download: 'Download', previewEmpty: '생성 결과를 검증하면 미리보기가 표시됩니다.',
     downloadEmpty: '다운로드할 A2UI source가 없습니다.', generateFailed: 'Generate failed', validateFailed: 'Validate failed',
@@ -62,7 +63,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     connected: 'Connection Status', notRun: 'Generate has not run yet.', currentSelected: 'Current selection',
     liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use',
     prompt: 'Prompt', source: 'A2UI Source', versionNotes: 'Version Notes', rendererNotes: 'Renderer Notes',
-    validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected',
+    validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected', schemaUnknown: 'Validation required',
     generate: 'Generate', generating: 'Generating...', validate: 'Validate', validating: 'Validating...',
     download: 'Download', previewEmpty: 'Run validation to render the preview.',
     downloadEmpty: 'No A2UI source to download.', generateFailed: 'Generate failed', validateFailed: 'Validate failed',
@@ -75,7 +76,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     connected: 'Estado de conexión', notRun: 'Aún no se ejecutó Generate.', currentSelected: 'Selección actual',
     liveConnected: 'Modelo en vivo conectado', fallbackUsed: 'Usando generador fallback',
     prompt: 'Prompt', source: 'Fuente A2UI', versionNotes: 'Notas de versión', rendererNotes: 'Notas de renderizador',
-    validation: 'Validación', schemaValid: 'Esquema válido', schemaInvalid: 'Problemas de esquema detectados',
+    validation: 'Validación', schemaValid: 'Esquema válido', schemaInvalid: 'Problemas de esquema detectados', schemaUnknown: 'Validación requerida',
     generate: 'Generar', generating: 'Generando...', validate: 'Validar', validating: 'Validando...',
     download: 'Descargar', previewEmpty: 'Valida el resultado generado para ver la vista previa.',
     downloadEmpty: 'No hay fuente A2UI para descargar.', generateFailed: 'Error al generar', validateFailed: 'Error al validar',
@@ -88,7 +89,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     connected: '接続状態', notRun: 'まだ Generate を実行していません。', currentSelected: '現在の選択',
     liveConnected: 'ライブモデル接続中', fallbackUsed: 'フォールバック生成を使用中',
     prompt: 'プロンプト', source: 'A2UI ソース', versionNotes: 'バージョンノート', rendererNotes: 'レンダラーノート',
-    validation: '検証', schemaValid: 'スキーマは有効です', schemaInvalid: 'スキーマ問題を検出しました',
+    validation: '検証', schemaValid: 'スキーマは有効です', schemaInvalid: 'スキーマ問題を検出しました', schemaUnknown: '検証が必要です',
     generate: '生成', generating: '生成中...', validate: '検証', validating: '検証中...',
     download: 'ダウンロード', previewEmpty: '生成結果を検証するとプレビューが表示されます。',
     downloadEmpty: 'ダウンロードする A2UI ソースがありません。', generateFailed: '生成に失敗しました', validateFailed: '検証に失敗しました',
@@ -101,7 +102,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     connected: '连接状态', notRun: '尚未执行 Generate。', currentSelected: '当前选择',
     liveConnected: '实时模型已连接', fallbackUsed: '正在使用回退生成器',
     prompt: '提示词', source: 'A2UI 源码', versionNotes: '版本说明', rendererNotes: '渲染说明',
-    validation: '校验', schemaValid: 'Schema 有效', schemaInvalid: '检测到 Schema 问题',
+    validation: '校验', schemaValid: 'Schema 有效', schemaInvalid: '检测到 Schema 问题', schemaUnknown: '需要先校验',
     generate: '生成', generating: '生成中...', validate: '校验', validating: '校验中...',
     download: '下载', previewEmpty: '校验生成结果后将显示预览。',
     downloadEmpty: '没有可下载的 A2UI 源码。', generateFailed: '生成失败', validateFailed: '校验失败',
@@ -274,6 +275,8 @@ export function App() {
   async function handleGenerate() {
     setIsGenerating(true);
     setActionError(null);
+    setValidation(null);
+    setPreview(null);
     try {
       const result = await generate(prompt, version, provider, runtime);
       setSource(result.serialized);
@@ -283,7 +286,9 @@ export function App() {
       setValidation(next.validation);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('generateFailed');
-      setActionError(localizeApiError(message, language));
+      const localized = localizeApiError(message, language);
+      setActionError(localized);
+      setValidation({valid: false, issues: [{instancePath: '/', message: localized}]});
     } finally {
       setIsGenerating(false);
     }
@@ -298,7 +303,10 @@ export function App() {
       setPreview(result.preview);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('validateFailed');
-      setActionError(localizeApiError(message, language));
+      const localized = localizeApiError(message, language);
+      setActionError(localized);
+      setValidation({valid: false, issues: [{instancePath: '/', message: localized}]});
+      setPreview(null);
     } finally {
       setIsValidating(false);
     }
@@ -307,52 +315,58 @@ export function App() {
   const current = analysis.find((entry) => entry.version === version);
   const hasGenerated = Boolean(connection);
   const canDownload = hasGenerated && Boolean(validation?.valid) && Boolean(source.trim());
+  const validationState = validation == null ? 'neutral' : validation.valid ? 'ok' : 'bad';
+  const validationLabel = validation == null ? t('schemaUnknown') : validation.valid ? t('schemaValid') : t('schemaInvalid');
 
   return (
     <main className="workspace-shell">
       <header className="top-nav">
-        <button className={page === 'studio' ? 'active' : ''} onClick={() => setPage('studio')}>{t('studio')}</button>
-        <button className={page === 'settings' ? 'active' : ''} onClick={() => setPage('settings')}>{t('settings')}</button>
+        <h1 className="app-title">{APP_TITLE}</h1>
+        <div className="top-nav-tabs">
+          <button className={page === 'studio' ? 'active' : ''} onClick={() => setPage('studio')}>{t('studio')}</button>
+          <button className={page === 'settings' ? 'active' : ''} onClick={() => setPage('settings')}>{t('settings')}</button>
+        </div>
       </header>
 
       {page === 'settings' ? (
         <section className="settings-page">
           <div className="panel settings-full">
-            <h2>{t('settingsTitle')}</h2>
-            <p className="muted">{t('settingsDesc')}</p>
-            <label className="settings-lang">
-              <span>{t('lang')}</span>
-              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-                {LANG_OPTIONS.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
-              </select>
-            </label>
-            <label className="persist-row">
-              <input type="checkbox" checked={secureMode} onChange={(event) => setSecureMode(event.target.checked)} />
-              <span>{t('secureMode')}</span>
-            </label>
-            <label className="persist-row">
-              <input type="checkbox" checked={persistSettings} disabled={secureMode} onChange={(event) => setPersistSettings(event.target.checked)} />
-              <span>{t('persist')}</span>
-            </label>
-            <div className="settings-grid">
-              <label><span>OpenAI Key</span><input type="password" value={runtime.openaiApiKey ?? ''} onChange={(event) => updateRuntime('openaiApiKey', event.target.value)} placeholder="sk-..." /></label>
-              <label><span>OpenAI Model</span><input value={runtime.openaiModel ?? ''} onChange={(event) => updateRuntime('openaiModel', event.target.value)} placeholder="gpt-4.1-mini" /></label>
-              <label><span>Gemini Key</span><input type="password" value={runtime.geminiApiKey ?? ''} onChange={(event) => updateRuntime('geminiApiKey', event.target.value)} placeholder="AIza..." /></label>
-              <label><span>Gemini Model</span><input value={runtime.geminiModel ?? ''} onChange={(event) => updateRuntime('geminiModel', event.target.value)} placeholder="gemini-2.5-flash" /></label>
-              <label><span>Claude Key</span><input type="password" value={runtime.anthropicApiKey ?? ''} onChange={(event) => updateRuntime('anthropicApiKey', event.target.value)} placeholder="sk-ant-..." /></label>
-              <label><span>Claude Model</span><input value={runtime.anthropicModel ?? ''} onChange={(event) => updateRuntime('anthropicModel', event.target.value)} placeholder="claude-3-5-sonnet-latest" /></label>
-            </div>
+            <h2>{t('settings')}</h2>
+
+            <section className="settings-section">
+              <h3>Model Settings</h3>
+              <p className="muted">{t('settingsDesc')}</p>
+              <label className="persist-row">
+                <input type="checkbox" checked={secureMode} onChange={(event) => setSecureMode(event.target.checked)} />
+                <span>{t('secureMode')}</span>
+              </label>
+              <label className="persist-row">
+                <input type="checkbox" checked={persistSettings} disabled={secureMode} onChange={(event) => setPersistSettings(event.target.checked)} />
+                <span>{t('persist')}</span>
+              </label>
+              <div className="settings-grid">
+                <label><span>OpenAI Key</span><input type="password" value={runtime.openaiApiKey ?? ''} onChange={(event) => updateRuntime('openaiApiKey', event.target.value)} placeholder="sk-..." /></label>
+                <label><span>OpenAI Model</span><input value={runtime.openaiModel ?? ''} onChange={(event) => updateRuntime('openaiModel', event.target.value)} placeholder="gpt-4.1-mini" /></label>
+                <label><span>Gemini Key</span><input type="password" value={runtime.geminiApiKey ?? ''} onChange={(event) => updateRuntime('geminiApiKey', event.target.value)} placeholder="AIza..." /></label>
+                <label><span>Gemini Model</span><input value={runtime.geminiModel ?? ''} onChange={(event) => updateRuntime('geminiModel', event.target.value)} placeholder="gemini-2.5-flash" /></label>
+                <label><span>Claude Key</span><input type="password" value={runtime.anthropicApiKey ?? ''} onChange={(event) => updateRuntime('anthropicApiKey', event.target.value)} placeholder="sk-ant-..." /></label>
+                <label><span>Claude Model</span><input value={runtime.anthropicModel ?? ''} onChange={(event) => updateRuntime('anthropicModel', event.target.value)} placeholder="claude-3-5-sonnet-latest" /></label>
+              </div>
+            </section>
+            <section className="settings-section">
+              <h3>Language Settings</h3>
+              <label className="settings-lang">
+                <span>{t('lang')}</span>
+                <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
+                  {LANG_OPTIONS.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+                </select>
+              </label>
+            </section>
           </div>
         </section>
       ) : (
         <div className="app-shell">
           <section className="left-pane">
-            <div className="panel hero">
-              <div>
-                <p className="eyebrow">A2UI Studio</p>
-                <h1>{t('title')}</h1>
-              </div>
-            </div>
 
             <div className="panel action-status info">
               <strong>{t('connected')}</strong>
@@ -410,7 +424,7 @@ export function App() {
                 <h3>{t('validation')}</h3>
                 <button className="secondary" onClick={handleValidate} disabled={isGenerating || isValidating || !source.trim()}>{isValidating ? t('validating') : t('validate')}</button>
               </div>
-              <div className={`validation ${validation?.valid ? 'ok' : 'bad'}`}>{validation?.valid ? t('schemaValid') : t('schemaInvalid')}</div>
+              <div className={`validation ${validationState}`}>{validationLabel}</div>
               <ul className="issues">{(validation?.issues ?? []).map((issue) => <li key={`${issue.instancePath}-${issue.message}`}><code>{issue.instancePath}</code> {issue.message}</li>)}</ul>
             </div>
             <PreviewPane preview={preview} emptyLabel={t('previewEmpty')} />
@@ -420,3 +434,14 @@ export function App() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
