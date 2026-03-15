@@ -25,9 +25,17 @@ const GEMINI_OUTPUT_SCHEMA = {
   required: ['messages'],
 };
 
-const PROVIDER_TIMEOUT_MS = 25000;
+function getProviderTimeoutMs(): number {
+  const parsed = Number(process.env.PROVIDER_TIMEOUT_MS ?? '45000');
+  if (!Number.isFinite(parsed)) return 45000;
+  return Math.max(5000, Math.min(55000, Math.trunc(parsed)));
+}
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<Response> {
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes('Request timeout after');
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = getProviderTimeoutMs()): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -41,8 +49,6 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = PROV
     clearTimeout(timer);
   }
 }
-
-
 
 function getOpenAIModel(runtime?: ProviderRuntimeConfig): string {
   return runtime?.openaiModel ?? process.env.OPENAI_MODEL ?? 'gpt-4.1-mini';
@@ -128,28 +134,49 @@ async function callOpenAI(system: string, user: string, runtime?: ProviderRuntim
   return parseJson(payload.choices?.[0]?.message?.content ?? '');
 }
 
-async function callGemini(system: string, user: string, runtime?: ProviderRuntimeConfig): Promise<unknown[]> {
-  const apiKey = runtime?.geminiApiKey ?? process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('Gemini API key is missing');
+async function requestGemini(
+  endpoint: string,
+  system: string,
+  user: string,
+  useSchema: boolean,
+): Promise<Response> {
+  const generationConfig: Record<string, unknown> = {
+    temperature: 0.2,
+    responseMimeType: 'application/json',
+  };
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${getGeminiModel(runtime)}:generateContent?key=${apiKey}`;
-  const response = await fetchWithTimeout(endpoint, {
+  if (useSchema) generationConfig.responseSchema = GEMINI_OUTPUT_SCHEMA;
+
+  return fetchWithTimeout(endpoint, {
     method: 'POST',
     headers: {'content-type': 'application/json'},
     body: JSON.stringify({
       system_instruction: {parts: [{text: system}]},
       contents: [{role: 'user', parts: [{text: user}]}],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: 'application/json',
-        responseSchema: GEMINI_OUTPUT_SCHEMA,
-      },
+      generationConfig,
     }),
   });
+}
+
+async function callGemini(system: string, user: string, runtime?: ProviderRuntimeConfig): Promise<unknown[]> {
+  const apiKey = runtime?.geminiApiKey ?? process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('Gemini API key is missing');
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${getGeminiModel(runtime)}:generateContent?key=${apiKey}`;
+
+  let response: Response;
+  try {
+    response = await requestGemini(endpoint, system, user, true);
+  } catch (error) {
+    if (!isTimeoutError(error)) throw error;
+    response = await requestGemini(endpoint, system, user, false);
+  }
+
   if (!response.ok) {
     const detail = await readErrorDetail(response);
     throw new Error('Gemini request failed (' + detail + ')');
   }
+
   const payload: any = await response.json();
   const text = payload.candidates?.[0]?.content?.parts?.map((part: any) => part.text ?? '').join('') ?? '';
   return parseJson(text);
@@ -207,9 +234,3 @@ export async function generateWithLiveProvider(
 
   throw new Error(`Unsupported live provider: ${provider}`);
 }
-
-
-
-
-
-
