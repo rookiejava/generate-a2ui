@@ -43,169 +43,69 @@ const LANG_OPTIONS: {code: Language; label: string}[] = [
 
 const TEXT: Record<Language, Record<string, string>> = {
   ko: {
-    studio: 'Studio',
-    settings: 'Settings',
-    title: 'Prompt to versioned A2UI',
-    settingsTitle: 'Model Settings',
+    studio: 'Studio', settings: 'Settings', title: 'Prompt to versioned A2UI', settingsTitle: 'Model Settings',
     settingsDesc: '키/모델 설정은 Generate 요청 시에만 사용됩니다. 키 쿼터는 각 provider 정책을 따릅니다.',
-    secureMode: '보안 모드 (세션 메모리 only)',
-    persist: '이 브라우저에 설정 저장',
-    connected: '연결 상태',
-    notRun: '아직 Generate를 실행하지 않았습니다.',
-    currentSelected: '현재 선택',
-    liveConnected: 'Live model connected',
-    fallbackUsed: 'Fallback generator in use',
-    prompt: 'Prompt',
-    source: 'A2UI Source',
-    versionNotes: 'Version Notes',
-    rendererNotes: 'Renderer Notes',
-    validation: 'Validation',
-    schemaValid: 'Schema valid',
-    schemaInvalid: 'Schema issues detected',
-    generate: 'Generate',
-    generating: 'Generating...',
-    validate: 'Validate',
-    validating: 'Validating...',
-    download: 'Download',
-    previewEmpty: '생성 결과를 검증하면 미리보기가 표시됩니다.',
-    downloadEmpty: '다운로드할 A2UI source가 없습니다.',
-    generateFailed: 'Generate failed',
-    validateFailed: 'Validate failed',
-    requested: 'requested',
-    active: 'active',
-    lang: 'Language',
+    secureMode: '보안 모드 (세션 메모리 only)', persist: '이 브라우저에 설정 저장',
+    connected: '연결 상태', notRun: '아직 Generate를 실행하지 않았습니다.', currentSelected: '현재 선택',
+    liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use',
+    prompt: 'Prompt', source: 'A2UI Source', versionNotes: 'Version Notes', rendererNotes: 'Renderer Notes',
+    validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected',
+    generate: 'Generate', generating: 'Generating...', validate: 'Validate', validating: 'Validating...',
+    download: 'Download', previewEmpty: '생성 결과를 검증하면 미리보기가 표시됩니다.',
+    downloadEmpty: '다운로드할 A2UI source가 없습니다.', generateFailed: 'Generate failed', validateFailed: 'Validate failed',
+    requested: 'requested', active: 'active', lang: 'Language',
   },
   en: {
-    studio: 'Studio',
-    settings: 'Settings',
-    title: 'Prompt to versioned A2UI',
-    settingsTitle: 'Model Settings',
+    studio: 'Studio', settings: 'Settings', title: 'Prompt to versioned A2UI', settingsTitle: 'Model Settings',
     settingsDesc: 'Keys and model settings are used only for Generate requests. Quotas follow each provider policy.',
-    secureMode: 'Secure mode (session memory only)',
-    persist: 'Save settings in this browser',
-    connected: 'Connection Status',
-    notRun: 'Generate has not run yet.',
-    currentSelected: 'Current selection',
-    liveConnected: 'Live model connected',
-    fallbackUsed: 'Fallback generator in use',
-    prompt: 'Prompt',
-    source: 'A2UI Source',
-    versionNotes: 'Version Notes',
-    rendererNotes: 'Renderer Notes',
-    validation: 'Validation',
-    schemaValid: 'Schema valid',
-    schemaInvalid: 'Schema issues detected',
-    generate: 'Generate',
-    generating: 'Generating...',
-    validate: 'Validate',
-    validating: 'Validating...',
-    download: 'Download',
-    previewEmpty: 'Run validation to render the preview.',
-    downloadEmpty: 'No A2UI source to download.',
-    generateFailed: 'Generate failed',
-    validateFailed: 'Validate failed',
-    requested: 'requested',
-    active: 'active',
-    lang: 'Language',
+    secureMode: 'Secure mode (session memory only)', persist: 'Save settings in this browser',
+    connected: 'Connection Status', notRun: 'Generate has not run yet.', currentSelected: 'Current selection',
+    liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use',
+    prompt: 'Prompt', source: 'A2UI Source', versionNotes: 'Version Notes', rendererNotes: 'Renderer Notes',
+    validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected',
+    generate: 'Generate', generating: 'Generating...', validate: 'Validate', validating: 'Validating...',
+    download: 'Download', previewEmpty: 'Run validation to render the preview.',
+    downloadEmpty: 'No A2UI source to download.', generateFailed: 'Generate failed', validateFailed: 'Validate failed',
+    requested: 'requested', active: 'active', lang: 'Language',
   },
   es: {
-    studio: 'Estudio',
-    settings: 'Configuración',
-    title: 'Prompt a A2UI versionado',
-    settingsTitle: 'Configuración de modelo',
+    studio: 'Estudio', settings: 'Configuración', title: 'Prompt a A2UI versionado', settingsTitle: 'Configuración de modelo',
     settingsDesc: 'Las claves y modelos se usan solo en Generate. Las cuotas dependen de cada proveedor.',
-    secureMode: 'Modo seguro (solo memoria de sesión)',
-    persist: 'Guardar configuración en este navegador',
-    connected: 'Estado de conexión',
-    notRun: 'Aún no se ejecutó Generate.',
-    currentSelected: 'Selección actual',
-    liveConnected: 'Modelo en vivo conectado',
-    fallbackUsed: 'Usando generador fallback',
-    prompt: 'Prompt',
-    source: 'Fuente A2UI',
-    versionNotes: 'Notas de versión',
-    rendererNotes: 'Notas de renderizador',
-    validation: 'Validación',
-    schemaValid: 'Esquema válido',
-    schemaInvalid: 'Problemas de esquema detectados',
-    generate: 'Generar',
-    generating: 'Generando...',
-    validate: 'Validar',
-    validating: 'Validando...',
-    download: 'Descargar',
-    previewEmpty: 'Valida el resultado generado para ver la vista previa.',
-    downloadEmpty: 'No hay fuente A2UI para descargar.',
-    generateFailed: 'Error al generar',
-    validateFailed: 'Error al validar',
-    requested: 'solicitado',
-    active: 'activo',
-    lang: 'Idioma',
+    secureMode: 'Modo seguro (solo memoria de sesión)', persist: 'Guardar configuración en este navegador',
+    connected: 'Estado de conexión', notRun: 'Aún no se ejecutó Generate.', currentSelected: 'Selección actual',
+    liveConnected: 'Modelo en vivo conectado', fallbackUsed: 'Usando generador fallback',
+    prompt: 'Prompt', source: 'Fuente A2UI', versionNotes: 'Notas de versión', rendererNotes: 'Notas de renderizador',
+    validation: 'Validación', schemaValid: 'Esquema válido', schemaInvalid: 'Problemas de esquema detectados',
+    generate: 'Generar', generating: 'Generando...', validate: 'Validar', validating: 'Validando...',
+    download: 'Descargar', previewEmpty: 'Valida el resultado generado para ver la vista previa.',
+    downloadEmpty: 'No hay fuente A2UI para descargar.', generateFailed: 'Error al generar', validateFailed: 'Error al validar',
+    requested: 'solicitado', active: 'activo', lang: 'Idioma',
   },
   ja: {
-    studio: 'スタジオ',
-    settings: '設定',
-    title: 'Prompt to versioned A2UI',
-    settingsTitle: 'モデル設定',
+    studio: 'スタジオ', settings: '設定', title: 'Prompt to versioned A2UI', settingsTitle: 'モデル設定',
     settingsDesc: 'キーとモデル設定は Generate リクエスト時のみ使用されます。クォータは各プロバイダのポリシーに従います。',
-    secureMode: 'セキュアモード（セッションメモリのみ）',
-    persist: 'このブラウザに設定を保存',
-    connected: '接続状態',
-    notRun: 'まだ Generate を実行していません。',
-    currentSelected: '現在の選択',
-    liveConnected: 'ライブモデル接続中',
-    fallbackUsed: 'フォールバック生成を使用中',
-    prompt: 'プロンプト',
-    source: 'A2UI ソース',
-    versionNotes: 'バージョンノート',
-    rendererNotes: 'レンダラーノート',
-    validation: '検証',
-    schemaValid: 'スキーマは有効です',
-    schemaInvalid: 'スキーマ問題を検出しました',
-    generate: '生成',
-    generating: '生成中...',
-    validate: '検証',
-    validating: '検証中...',
-    download: 'ダウンロード',
-    previewEmpty: '生成結果を検証するとプレビューが表示されます。',
-    downloadEmpty: 'ダウンロードする A2UI ソースがありません。',
-    generateFailed: '生成に失敗しました',
-    validateFailed: '検証に失敗しました',
-    requested: 'requested',
-    active: 'active',
-    lang: '言語',
+    secureMode: 'セキュアモード（セッションメモリのみ）', persist: 'このブラウザに設定を保存',
+    connected: '接続状態', notRun: 'まだ Generate を実行していません。', currentSelected: '現在の選択',
+    liveConnected: 'ライブモデル接続中', fallbackUsed: 'フォールバック生成を使用中',
+    prompt: 'プロンプト', source: 'A2UI ソース', versionNotes: 'バージョンノート', rendererNotes: 'レンダラーノート',
+    validation: '検証', schemaValid: 'スキーマは有効です', schemaInvalid: 'スキーマ問題を検出しました',
+    generate: '生成', generating: '生成中...', validate: '検証', validating: '検証中...',
+    download: 'ダウンロード', previewEmpty: '生成結果を検証するとプレビューが表示されます。',
+    downloadEmpty: 'ダウンロードする A2UI ソースがありません。', generateFailed: '生成に失敗しました', validateFailed: '検証に失敗しました',
+    requested: 'requested', active: 'active', lang: '言語',
   },
   zh: {
-    studio: '工作台',
-    settings: '设置',
-    title: 'Prompt 到版本化 A2UI',
-    settingsTitle: '模型设置',
+    studio: '工作台', settings: '设置', title: 'Prompt 到版本化 A2UI', settingsTitle: '模型设置',
     settingsDesc: '密钥和模型设置仅在 Generate 请求时使用。配额遵循各提供商策略。',
-    secureMode: '安全模式（仅会话内存）',
-    persist: '在此浏览器保存设置',
-    connected: '连接状态',
-    notRun: '尚未执行 Generate。',
-    currentSelected: '当前选择',
-    liveConnected: '实时模型已连接',
-    fallbackUsed: '正在使用回退生成器',
-    prompt: '提示词',
-    source: 'A2UI 源码',
-    versionNotes: '版本说明',
-    rendererNotes: '渲染说明',
-    validation: '校验',
-    schemaValid: 'Schema 有效',
-    schemaInvalid: '检测到 Schema 问题',
-    generate: '生成',
-    generating: '生成中...',
-    validate: '校验',
-    validating: '校验中...',
-    download: '下载',
-    previewEmpty: '校验生成结果后将显示预览。',
-    downloadEmpty: '没有可下载的 A2UI 源码。',
-    generateFailed: '生成失败',
-    validateFailed: '校验失败',
-    requested: 'requested',
-    active: 'active',
-    lang: '语言',
+    secureMode: '安全模式（仅会话内存）', persist: '在此浏览器保存设置',
+    connected: '连接状态', notRun: '尚未执行 Generate。', currentSelected: '当前选择',
+    liveConnected: '实时模型已连接', fallbackUsed: '正在使用回退生成器',
+    prompt: '提示词', source: 'A2UI 源码', versionNotes: '版本说明', rendererNotes: '渲染说明',
+    validation: '校验', schemaValid: 'Schema 有效', schemaInvalid: '检测到 Schema 问题',
+    generate: '生成', generating: '生成中...', validate: '校验', validating: '校验中...',
+    download: '下载', previewEmpty: '校验生成结果后将显示预览。',
+    downloadEmpty: '没有可下载的 A2UI 源码。', generateFailed: '生成失败', validateFailed: '校验失败',
+    requested: 'requested', active: 'active', lang: '语言',
   },
 };
 
@@ -405,6 +305,8 @@ export function App() {
   }
 
   const current = analysis.find((entry) => entry.version === version);
+  const hasGenerated = Boolean(connection);
+  const canDownload = hasGenerated && Boolean(validation?.valid) && Boolean(source.trim());
 
   return (
     <main className="workspace-shell">
@@ -450,17 +352,6 @@ export function App() {
                 <p className="eyebrow">A2UI Studio</p>
                 <h1>{t('title')}</h1>
               </div>
-              <div className="controls">
-                <select value={version} onChange={(event) => setVersion(event.target.value as A2UIVersion)}>
-                  <option value="v0.8">v0.8</option><option value="v0.9">v0.9</option><option value="v0.10">v0.10</option>
-                </select>
-                <select value={provider} onChange={(event) => setProvider(event.target.value as ProviderId)}>
-                  {providers.map((item) => <option key={item} value={item}>{item}</option>)}
-                </select>
-                <button onClick={handleGenerate} disabled={isGenerating || isValidating}>{isGenerating ? t('generating') : t('generate')}</button>
-                <button className="secondary" onClick={handleValidate} disabled={isGenerating || isValidating}>{isValidating ? t('validating') : t('validate')}</button>
-                <button className="secondary" onClick={handleDownloadSource} disabled={isGenerating || isValidating || !source.trim()}>{t('download')}</button>
-              </div>
             </div>
 
             <div className="panel action-status info">
@@ -482,12 +373,26 @@ export function App() {
             {actionError ? <div className="panel action-status error">{actionError}</div> : null}
 
             <div className="panel">
-              <label className="label">{t('prompt')}</label>
+              <div className="panel-head">
+                <label className="label no-margin">{t('prompt')}</label>
+                <div className="controls compact">
+                  <select value={version} onChange={(event) => setVersion(event.target.value as A2UIVersion)}>
+                    <option value="v0.8">v0.8</option><option value="v0.9">v0.9</option><option value="v0.10">v0.10</option>
+                  </select>
+                  <select value={provider} onChange={(event) => setProvider(event.target.value as ProviderId)}>
+                    {providers.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                  <button onClick={handleGenerate} disabled={isGenerating || isValidating}>{isGenerating ? t('generating') : t('generate')}</button>
+                </div>
+              </div>
               <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={5} />
             </div>
 
             <div className="panel">
-              <label className="label">{t('source')}</label>
+              <div className="panel-head">
+                <label className="label no-margin">{t('source')}</label>
+                <button className="icon-button" title={t('download')} aria-label={t('download')} onClick={handleDownloadSource} disabled={!canDownload || isGenerating || isValidating}>↓</button>
+              </div>
               <textarea value={source} onChange={(event) => setSource(event.target.value)} rows={18} />
             </div>
 
@@ -501,7 +406,10 @@ export function App() {
 
           <section className="right-pane">
             <div className="panel">
-              <h3>{t('validation')}</h3>
+              <div className="panel-head">
+                <h3>{t('validation')}</h3>
+                <button className="secondary" onClick={handleValidate} disabled={isGenerating || isValidating || !source.trim()}>{isValidating ? t('validating') : t('validate')}</button>
+              </div>
               <div className={`validation ${validation?.valid ? 'ok' : 'bad'}`}>{validation?.valid ? t('schemaValid') : t('schemaInvalid')}</div>
               <ul className="issues">{(validation?.issues ?? []).map((issue) => <li key={`${issue.instancePath}-${issue.message}`}><code>{issue.instancePath}</code> {issue.message}</li>)}</ul>
             </div>
@@ -512,10 +420,3 @@ export function App() {
     </main>
   );
 }
-
-
-
-
-
-
-

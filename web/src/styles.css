@@ -62,3 +62,9 @@ button:disabled { opacity: 0.62; cursor: not-allowed; }
   .preview-shell { min-height: 40vh; }
   .settings-grid { grid-template-columns: 1fr; }
 }
+
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.no-margin { margin: 0; }
+.controls.compact { justify-content: flex-end; }
+.icon-button { width: 36px; height: 36px; border-radius: 999px; display: inline-grid; place-items: center; padding: 0; font-size: 18px; line-height: 1; }
+.icon-button:disabled { opacity: 0.45; }
