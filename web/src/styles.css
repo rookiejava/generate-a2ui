@@ -13,11 +13,13 @@ h1, h3, p { margin: 0; }
 textarea { width: 100%; border: 1px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, 0.72); padding: 14px; resize: vertical; min-height: 120px; }
 button, select { border: 1px solid transparent; border-radius: 999px; padding: 10px 14px; background: var(--accent-strong); color: white; }
 button.secondary, select { background: white; color: var(--ink); border-color: var(--line); }
+button:disabled { opacity: 0.62; cursor: not-allowed; }
 .label { display: block; margin-bottom: 8px; font-weight: 600; }
 .analysis ul, .issues { margin: 10px 0 0; padding-left: 18px; color: var(--muted); }
 .validation { display: inline-flex; border-radius: 999px; padding: 8px 12px; font-weight: 700; }
 .validation.ok { background: rgba(15, 118, 110, 0.14); color: #0f766e; }
 .validation.bad { background: rgba(185, 28, 28, 0.12); color: #b91c1c; }
+.action-status.error { border-color: rgba(185, 28, 28, 0.35); color: #991b1b; background: rgba(254, 242, 242, 0.92); }
 .preview-shell { background: rgba(255, 255, 255, 0.7); border: 1px solid var(--line); border-radius: 28px; min-height: 70vh; display: grid; grid-template-rows: auto 1fr auto; }
 .preview-shell.empty { place-items: center; color: var(--muted); }
 .preview-head { display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); color: var(--muted); }
