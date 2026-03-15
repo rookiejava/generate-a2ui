@@ -14,7 +14,8 @@
     "dev": "concurrently \"npm:dev:server\" \"npm:dev:web\"",
     "start": "node dist/server/index.js",
     "typecheck": "tsc --noEmit",
-    "smoke:provider": "tsx scripts/provider-smoke.ts"
+    "smoke:provider": "tsx scripts/provider-smoke.ts",
+    "smoke:deployment": "tsx scripts/deployment-smoke.ts"
   },
   "dependencies": {
     "ajv": "^8.17.1",

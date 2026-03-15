@@ -37,3 +37,9 @@ provider smoke test:
 ```bash
 npm run smoke:provider -- openai v0.10 "로그인 화면 만들어줘"
 ```
+
+deployment smoke test:
+
+```bash
+npm run smoke:deployment -- https://your-app.vercel.app fallback v0.10 "로그인 화면 만들어줘"
+```
