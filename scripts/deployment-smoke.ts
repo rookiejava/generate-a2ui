@@ -1,7 +1,8 @@
 const baseUrl = (process.argv[2] ?? process.env.SMOKE_BASE_URL ?? '').replace(/\/$/, '');
 const provider = process.argv[3] ?? 'fallback';
-const version = process.argv[4] ?? 'v0.10';
-const prompt = process.argv.slice(5).join(' ') || '로그인 화면 만들어줘';
+const maybeVersion = process.argv[4];
+const version = maybeVersion === 'v0.8' || maybeVersion === 'v0.9' || maybeVersion === 'v0.10' ? maybeVersion : 'v0.10';
+const prompt = (maybeVersion === version ? process.argv.slice(5) : process.argv.slice(4)).join(' ') || '로그인 화면 만들어줘';
 
 if (!baseUrl) {
   process.stderr.write('Usage: tsx scripts/deployment-smoke.ts <baseUrl> [provider] [version] [prompt]\n');
