@@ -411,12 +411,6 @@ export function App() {
       <header className="top-nav">
         <button className={page === 'studio' ? 'active' : ''} onClick={() => setPage('studio')}>{t('studio')}</button>
         <button className={page === 'settings' ? 'active' : ''} onClick={() => setPage('settings')}>{t('settings')}</button>
-        <div className="lang-switch">
-          <label>{t('lang')}</label>
-          <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-            {LANG_OPTIONS.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
-          </select>
-        </div>
       </header>
 
       {page === 'settings' ? (
@@ -424,6 +418,12 @@ export function App() {
           <div className="panel settings-full">
             <h2>{t('settingsTitle')}</h2>
             <p className="muted">{t('settingsDesc')}</p>
+            <label className="settings-lang">
+              <span>{t('lang')}</span>
+              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
+                {LANG_OPTIONS.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+              </select>
+            </label>
             <label className="persist-row">
               <input type="checkbox" checked={secureMode} onChange={(event) => setSecureMode(event.target.checked)} />
               <span>{t('secureMode')}</span>
@@ -512,6 +512,7 @@ export function App() {
     </main>
   );
 }
+
 
 
 
