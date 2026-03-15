@@ -25,6 +25,24 @@ const GEMINI_OUTPUT_SCHEMA = {
   required: ['messages'],
 };
 
+const PROVIDER_TIMEOUT_MS = 25000;
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = PROVIDER_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {...init, signal: controller.signal});
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+
 
 function getOpenAIModel(runtime?: ProviderRuntimeConfig): string {
   return runtime?.openaiModel ?? process.env.OPENAI_MODEL ?? 'gpt-4.1-mini';
@@ -79,7 +97,7 @@ async function callOpenAI(system: string, user: string, runtime?: ProviderRuntim
   const apiKey = runtime?.openaiApiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OpenAI API key is missing');
 
-  const response = await fetch(`${runtime?.openaiBaseUrl ?? process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1'}/chat/completions`, {
+  const response = await fetchWithTimeout(`${runtime?.openaiBaseUrl ?? process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1'}/chat/completions`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -115,7 +133,7 @@ async function callGemini(system: string, user: string, runtime?: ProviderRuntim
   if (!apiKey) throw new Error('Gemini API key is missing');
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${getGeminiModel(runtime)}:generateContent?key=${apiKey}`;
-  const response = await fetch(endpoint, {
+  const response = await fetchWithTimeout(endpoint, {
     method: 'POST',
     headers: {'content-type': 'application/json'},
     body: JSON.stringify({
@@ -141,7 +159,7 @@ async function callClaude(system: string, user: string, runtime?: ProviderRuntim
   const apiKey = runtime?.anthropicApiKey ?? process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('Claude API key is missing');
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -189,6 +207,7 @@ export async function generateWithLiveProvider(
 
   throw new Error(`Unsupported live provider: ${provider}`);
 }
+
 
 
 
