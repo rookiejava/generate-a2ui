@@ -1,8 +1,17 @@
 import {useEffect, useState} from 'react';
-import {fetchAnalysis, generate, validate, type PreviewDocument} from './api';
+import {fetchAnalysis, generate, validate, type PreviewDocument, type RuntimeProviderInput} from './api';
 import type {A2UIVersion, ProviderId, ValidationResult, VersionAnalysis} from '../../src/core/types';
 
 const DEFAULT_PROMPT = '확인 버튼과 취소 버튼이 있는 경고창을 만들어줘';
+const SETTINGS_STORAGE_KEY = 'a2ui.runtimeSettings.v1';
+
+type ConnectionState = {
+  requestedProvider: ProviderId;
+  provider: ProviderId;
+  providerReason: string;
+  model?: string;
+  usedModel: boolean;
+};
 
 function resolveValue(value: unknown, data: Record<string, unknown>): string {
   if (typeof value === 'string') return value;
@@ -94,6 +103,9 @@ export function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [connection, setConnection] = useState<ConnectionState | null>(null);
+  const [runtime, setRuntime] = useState<RuntimeProviderInput>({});
+  const [persistSettings, setPersistSettings] = useState(false);
 
   useEffect(() => {
     fetchAnalysis()
@@ -104,12 +116,44 @@ export function App() {
       .catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {persist: boolean; runtime: RuntimeProviderInput};
+      if (parsed && typeof parsed === 'object') {
+        setPersistSettings(Boolean(parsed.persist));
+        setRuntime(parsed.runtime ?? {});
+      }
+    } catch {
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!persistSettings) {
+      localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({persist: true, runtime}));
+  }, [persistSettings, runtime]);
+
+  function updateRuntime(key: keyof RuntimeProviderInput, value: string) {
+    setRuntime((prev) => ({...prev, [key]: value}));
+  }
+
   async function handleGenerate() {
     setIsGenerating(true);
     setActionError(null);
     try {
-      const result = await generate(prompt, version, provider);
+      const result = await generate(prompt, version, provider, runtime);
       setSource(result.serialized);
+      setConnection({
+        requestedProvider: result.requestedProvider,
+        provider: result.provider,
+        providerReason: result.providerReason,
+        model: result.model,
+        usedModel: result.usedModel,
+      });
       const next = await validate(version, result.serialized);
       setPreview(next.preview);
       setValidation(next.validation);
@@ -156,6 +200,57 @@ export function App() {
             <button onClick={handleGenerate} disabled={isGenerating || isValidating}>{isGenerating ? 'Generating...' : 'Generate'}</button>
             <button className="secondary" onClick={handleValidate} disabled={isGenerating || isValidating}>{isValidating ? 'Validating...' : 'Validate'}</button>
           </div>
+        </div>
+
+        <details className="panel settings" open>
+          <summary>Model Settings</summary>
+          <p className="muted">키/모델 설정은 Generate 요청 시에만 사용됩니다. 키 쿼터는 각 provider 정책을 따릅니다.</p>
+          <label className="persist-row">
+            <input type="checkbox" checked={persistSettings} onChange={(event) => setPersistSettings(event.target.checked)} />
+            <span>이 브라우저에 설정 저장</span>
+          </label>
+          <div className="settings-grid">
+            <label>
+              <span>OpenAI Key</span>
+              <input type="password" value={runtime.openaiApiKey ?? ''} onChange={(event) => updateRuntime('openaiApiKey', event.target.value)} placeholder="sk-..." />
+            </label>
+            <label>
+              <span>OpenAI Model</span>
+              <input value={runtime.openaiModel ?? ''} onChange={(event) => updateRuntime('openaiModel', event.target.value)} placeholder="gpt-4.1-mini" />
+            </label>
+            <label>
+              <span>Gemini Key</span>
+              <input type="password" value={runtime.geminiApiKey ?? ''} onChange={(event) => updateRuntime('geminiApiKey', event.target.value)} placeholder="AIza..." />
+            </label>
+            <label>
+              <span>Gemini Model</span>
+              <input value={runtime.geminiModel ?? ''} onChange={(event) => updateRuntime('geminiModel', event.target.value)} placeholder="gemini-2.5-flash" />
+            </label>
+            <label>
+              <span>Claude Key</span>
+              <input type="password" value={runtime.anthropicApiKey ?? ''} onChange={(event) => updateRuntime('anthropicApiKey', event.target.value)} placeholder="sk-ant-..." />
+            </label>
+            <label>
+              <span>Claude Model</span>
+              <input value={runtime.anthropicModel ?? ''} onChange={(event) => updateRuntime('anthropicModel', event.target.value)} placeholder="claude-3-5-sonnet-latest" />
+            </label>
+          </div>
+        </details>
+
+        <div className="panel action-status info">
+          <strong>연결 상태</strong>
+          {connection ? (
+            <>
+              <p>requested: <code>{connection.requestedProvider}</code> / active: <code>{connection.provider}</code>{connection.model ? <> (<code>{connection.model}</code>)</> : null}</p>
+              <p>{connection.usedModel ? 'Live model connected' : 'Fallback generator in use'}</p>
+              <p className="muted">{connection.providerReason}</p>
+            </>
+          ) : (
+            <>
+              <p>아직 Generate를 실행하지 않았습니다.</p>
+              <p className="muted">현재 선택: <code>{provider}</code></p>
+            </>
+          )}
         </div>
 
         {actionError ? <div className="panel action-status error">{actionError}</div> : null}

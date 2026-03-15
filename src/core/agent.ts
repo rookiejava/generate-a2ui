@@ -1,31 +1,74 @@
 import type {GenerateOptions, GenerationOutput} from './types.js';
 import {generateFallbackMessages} from './fallback.js';
-import {generateWithLiveProvider} from './live-providers.js';
+import {generateWithLiveProvider, getLiveProviderModel} from './live-providers.js';
 import {resolveProvider} from './providers.js';
 import {serializeMessages} from './serialize.js';
 import {validateMessages} from './validator.js';
-function issuesToLines(issues: {instancePath: string; message: string}[]): string[] { return issues.map((issue) => `${issue.instancePath}: ${issue.message}`); }
+
+function issuesToLines(issues: {instancePath: string; message: string}[]): string[] {
+  return issues.map((issue) => `${issue.instancePath}: ${issue.message}`);
+}
+
 export async function generateA2ui(options: GenerateOptions): Promise<GenerationOutput> {
   const surfaceId = options.surfaceId ?? 'main';
-  const provider = resolveProvider(options.provider ?? 'auto');
+  const resolution = resolveProvider(options.provider ?? 'auto', options.runtime);
+
   let messages: unknown[];
-  let actualProvider = provider.effective;
-  let usedModel = provider.useModel;
-  if (provider.useModel && provider.effective !== 'fallback') {
+  let actualProvider = resolution.effective;
+  let usedModel = resolution.useModel;
+  let providerReason = resolution.reason;
+  let model = resolution.useModel ? getLiveProviderModel(resolution.effective, options.runtime) : undefined;
+
+  if (resolution.useModel && resolution.effective !== 'fallback') {
     try {
-      messages = await generateWithLiveProvider(provider.effective, options.version, options.prompt, surfaceId);
+      messages = await generateWithLiveProvider(resolution.effective, options.version, options.prompt, surfaceId, options.runtime);
       let validation = await validateMessages(options.version, messages);
+
       if (!validation.valid) {
-        messages = await generateWithLiveProvider(provider.effective, options.version, options.prompt, surfaceId, issuesToLines(validation.issues));
+        messages = await generateWithLiveProvider(
+          resolution.effective,
+          options.version,
+          options.prompt,
+          surfaceId,
+          options.runtime,
+          issuesToLines(validation.issues),
+        );
         validation = await validateMessages(options.version, messages);
       }
-      return { version: options.version, prompt: options.prompt, provider: actualProvider, messages, serialized: serializeMessages(messages, options.format ?? 'json'), validation, usedModel };
+
+      return {
+        version: options.version,
+        prompt: options.prompt,
+        requestedProvider: resolution.requested,
+        provider: actualProvider,
+        providerReason,
+        model,
+        messages,
+        serialized: serializeMessages(messages, options.format ?? 'json'),
+        validation,
+        usedModel,
+      };
     } catch {
       actualProvider = 'fallback';
       usedModel = false;
+      model = undefined;
+      providerReason = `Live call to ${resolution.effective} failed at runtime; fallback generator was used`;
     }
   }
+
   messages = generateFallbackMessages(options.version, options.prompt, surfaceId);
   const validation = await validateMessages(options.version, messages);
-  return { version: options.version, prompt: options.prompt, provider: actualProvider, messages, serialized: serializeMessages(messages, options.format ?? 'json'), validation, usedModel };
+
+  return {
+    version: options.version,
+    prompt: options.prompt,
+    requestedProvider: resolution.requested,
+    provider: actualProvider,
+    providerReason,
+    model,
+    messages,
+    serialized: serializeMessages(messages, options.format ?? 'json'),
+    validation,
+    usedModel,
+  };
 }

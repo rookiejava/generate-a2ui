@@ -10,6 +10,17 @@ export interface PreviewDocument {
   functionCalls: unknown[];
 }
 
+export interface RuntimeProviderInput {
+  openaiApiKey?: string;
+  geminiApiKey?: string;
+  anthropicApiKey?: string;
+  openaiModel?: string;
+  geminiModel?: string;
+  anthropicModel?: string;
+  openaiBaseUrl?: string;
+  anthropicVersion?: string;
+}
+
 async function parseJsonOrText(response: Response): Promise<any> {
   const text = await response.text();
   if (!text) return null;
@@ -40,11 +51,16 @@ export async function fetchAnalysis(): Promise<{versions: VersionAnalysis[]; pro
   return requestJson('/api/analysis');
 }
 
-export async function generate(prompt: string, version: A2UIVersion, provider: ProviderId): Promise<GenerationOutput> {
+export async function generate(
+  prompt: string,
+  version: A2UIVersion,
+  provider: ProviderId,
+  runtime?: RuntimeProviderInput,
+): Promise<GenerationOutput> {
   return requestJson('/api/generate', {
     method: 'POST',
     headers: {'content-type': 'application/json'},
-    body: JSON.stringify({prompt, version, provider}),
+    body: JSON.stringify({prompt, version, provider, runtime}),
   });
 }
 
