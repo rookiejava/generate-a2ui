@@ -30,6 +30,7 @@ button:disabled { opacity: 0.62; cursor: not-allowed; }
 .validation.neutral { background: rgba(107, 114, 128, 0.16); color: #374151; }
 .action-status.error { border-color: rgba(185, 28, 28, 0.35); color: #991b1b; background: rgba(254, 242, 242, 0.92); }
 .action-status.info { display: grid; gap: 6px; }
+.quota-note { margin: 0; color: #b45309; font-weight: 700; }
 .muted { color: var(--muted); }
 .persist-row { display: flex; align-items: center; gap: 8px; margin: 8px 0 12px; color: var(--muted); }
 .settings-lang { display: grid; gap: 6px; margin: 10px 0 14px; color: var(--muted); }
@@ -75,5 +76,6 @@ button:disabled { opacity: 0.62; cursor: not-allowed; }
 .settings-section { padding: 8px 0 14px; }
 .settings-section + .settings-section { border-top: 1px dashed var(--line); padding-top: 16px; margin-top: 8px; }
 .settings-section h3 { margin: 0 0 10px; }
+
 
 

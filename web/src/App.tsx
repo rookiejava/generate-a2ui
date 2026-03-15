@@ -48,7 +48,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     settingsDesc: '키/모델 설정은 Generate 요청 시에만 사용됩니다. 키 쿼터는 각 provider 정책을 따릅니다.',
     secureMode: '보안 모드 (세션 메모리 only)', persist: '이 브라우저에 설정 저장',
     connected: '연결 상태', notRun: '아직 Generate를 실행하지 않았습니다.', currentSelected: '현재 선택',
-    liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use',
+    liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use', quotaExceeded: '쿼터 초과로 fallback이 사용되었습니다.',
     prompt: 'Prompt', source: 'A2UI Source', versionNotes: 'Version Notes', rendererNotes: 'Renderer Notes',
     validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected', schemaUnknown: 'Validation required',
     generate: 'Generate', generating: 'Generating...', validate: 'Validate', validating: 'Validating...',
@@ -61,7 +61,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     settingsDesc: 'Keys and model settings are used only for Generate requests. Quotas follow each provider policy.',
     secureMode: 'Secure mode (session memory only)', persist: 'Save settings in this browser',
     connected: 'Connection Status', notRun: 'Generate has not run yet.', currentSelected: 'Current selection',
-    liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use',
+    liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use', quotaExceeded: 'Fallback is active due to quota exceeded.',
     prompt: 'Prompt', source: 'A2UI Source', versionNotes: 'Version Notes', rendererNotes: 'Renderer Notes',
     validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected', schemaUnknown: 'Validation required',
     generate: 'Generate', generating: 'Generating...', validate: 'Validate', validating: 'Validating...',
@@ -74,7 +74,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     settingsDesc: 'Las claves y modelos se usan solo en Generate. Las cuotas dependen de cada proveedor.',
     secureMode: 'Modo seguro (solo memoria de sesión)', persist: 'Guardar configuración en este navegador',
     connected: 'Estado de conexión', notRun: 'Aún no se ejecutó Generate.', currentSelected: 'Selección actual',
-    liveConnected: 'Modelo en vivo conectado', fallbackUsed: 'Usando generador fallback',
+    liveConnected: 'Modelo en vivo conectado', fallbackUsed: 'Usando generador fallback', quotaExceeded: 'Fallback activo por cuota excedida.',
     prompt: 'Prompt', source: 'Fuente A2UI', versionNotes: 'Notas de versión', rendererNotes: 'Notas de renderizador',
     validation: 'Validación', schemaValid: 'Esquema válido', schemaInvalid: 'Problemas de esquema detectados', schemaUnknown: 'Validación requerida',
     generate: 'Generar', generating: 'Generando...', validate: 'Validar', validating: 'Validando...',
@@ -87,7 +87,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     settingsDesc: 'キーとモデル設定は Generate リクエスト時のみ使用されます。クォータは各プロバイダのポリシーに従います。',
     secureMode: 'セキュアモード（セッションメモリのみ）', persist: 'このブラウザに設定を保存',
     connected: '接続状態', notRun: 'まだ Generate を実行していません。', currentSelected: '現在の選択',
-    liveConnected: 'ライブモデル接続中', fallbackUsed: 'フォールバック生成を使用中',
+    liveConnected: 'ライブモデル接続中', fallbackUsed: 'フォールバック生成を使用中', quotaExceeded: 'クォータ超過のためフォールバックを使用中です。',
     prompt: 'プロンプト', source: 'A2UI ソース', versionNotes: 'バージョンノート', rendererNotes: 'レンダラーノート',
     validation: '検証', schemaValid: 'スキーマは有効です', schemaInvalid: 'スキーマ問題を検出しました', schemaUnknown: '検証が必要です',
     generate: '生成', generating: '生成中...', validate: '検証', validating: '検証中...',
@@ -100,7 +100,7 @@ const TEXT: Record<Language, Record<string, string>> = {
     settingsDesc: '密钥和模型设置仅在 Generate 请求时使用。配额遵循各提供商策略。',
     secureMode: '安全模式（仅会话内存）', persist: '在此浏览器保存设置',
     connected: '连接状态', notRun: '尚未执行 Generate。', currentSelected: '当前选择',
-    liveConnected: '实时模型已连接', fallbackUsed: '正在使用回退生成器',
+    liveConnected: '实时模型已连接', fallbackUsed: '正在使用回退生成器', quotaExceeded: '由于配额超限，正在使用回退生成器。',
     prompt: '提示词', source: 'A2UI 源码', versionNotes: '版本说明', rendererNotes: '渲染说明',
     validation: '校验', schemaValid: 'Schema 有效', schemaInvalid: '检测到 Schema 问题', schemaUnknown: '需要先校验',
     generate: '生成', generating: '生成中...', validate: '校验', validating: '校验中...',
@@ -127,6 +127,11 @@ function localizeApiError(rawMessage: string, language: Language): string {
   if (message.includes('validation') || message.includes('schema')) return text.schema;
   if (message.includes('fallback') || message.includes('request failed with status')) return text.runtime;
   return rawMessage || text.unknown;
+}
+
+function isQuotaExceededReason(reason: string): boolean {
+  const message = reason.toLowerCase();
+  return message.includes('quota exceeded') || message.includes('rate limit') || message.includes('429');
 }
 
 function PreviewPane({preview, emptyLabel}: {preview: PreviewDocument | null; emptyLabel: string}) {
@@ -420,6 +425,7 @@ export function App() {
                 <>
                   <p>{t('requested')}: <code>{connection.requestedProvider}</code> / {t('active')}: <code>{connection.provider}</code>{connection.model ? <> (<code>{connection.model}</code>)</> : null}</p>
                   <p>{connection.usedModel ? t('liveConnected') : t('fallbackUsed')}</p>
+                  {!connection.usedModel && isQuotaExceededReason(connection.providerReason) ? <p className="quota-note">{t('quotaExceeded')}</p> : null}
                   <p className="muted">{connection.providerReason}</p>
                 </>
               ) : (
@@ -435,6 +441,9 @@ export function App() {
     </main>
   );
 }
+
+
+
 
 
 
