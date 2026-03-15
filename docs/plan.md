@@ -5,7 +5,7 @@
 ## 현재 상태
 
 - 날짜: 2026-03-15
-- 단계: Provider adapter 구현 완료, 실환경 검증 대기
+- 단계: 배포 준비 문서화 완료, 실환경 배포 대기
 - 상태: 진행 중
 
 ## 작업 목록
@@ -23,6 +23,7 @@
 | P9 | 마일스톤별 커밋 정리 | 진행 중 | 이번 단계 커밋 예정 |
 | P10 | live provider adapter 구현 | 완료 | openai/gemini/claude 1차 연결 |
 | P11 | provider 실환경 호출 검증 | 대기 | 실제 API 키 필요 |
+| P12 | Vercel 배포 설정 문서화 | 완료 | `.env.example`, deployment guide |
 
 ## 최근 업데이트
 
@@ -35,7 +36,7 @@
 - CLI, local server, Vercel API, 웹 UI를 1차 구현함
 - `npm install`, `npm run typecheck`, `npm run build` 검증을 완료함
 - OpenAI, Gemini, Claude용 live provider adapter와 validation retry 루프를 추가함
-- fallback generator를 최신 v0.9/v0.10 action 스키마에 맞게 수정함
+- `.env.example`과 배포 가이드를 추가하고 Vercel 함수 runtime 설정을 명시함
 
 ## 진행 규칙
 

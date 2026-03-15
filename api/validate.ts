@@ -1,3 +1,8 @@
+export const config = {
+  runtime: 'nodejs',
+  maxDuration: 30,
+};
+
 import {parseMessages} from '../src/core/serialize.js';
 import {validateMessages} from '../src/core/validator.js';
 import {createPreviewDocument} from '../src/core/preview.js';
