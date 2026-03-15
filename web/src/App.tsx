@@ -368,21 +368,6 @@ export function App() {
         <div className="app-shell">
           <section className="left-pane">
 
-            <div className="panel action-status info">
-              <strong>{t('connected')}</strong>
-              {connection ? (
-                <>
-                  <p>{t('requested')}: <code>{connection.requestedProvider}</code> / {t('active')}: <code>{connection.provider}</code>{connection.model ? <> (<code>{connection.model}</code>)</> : null}</p>
-                  <p>{connection.usedModel ? t('liveConnected') : t('fallbackUsed')}</p>
-                  <p className="muted">{connection.providerReason}</p>
-                </>
-              ) : (
-                <>
-                  <p>{t('notRun')}</p>
-                  <p className="muted">{t('currentSelected')}: <code>{provider}</code></p>
-                </>
-              )}
-            </div>
 
             {actionError ? <div className="panel action-status error">{actionError}</div> : null}
 
@@ -428,12 +413,29 @@ export function App() {
               <ul className="issues">{(validation?.issues ?? []).map((issue) => <li key={`${issue.instancePath}-${issue.message}`}><code>{issue.instancePath}</code> {issue.message}</li>)}</ul>
             </div>
             <PreviewPane preview={preview} emptyLabel={t('previewEmpty')} />
+
+            <div className="panel action-status info">
+              <strong>{t('connected')}</strong>
+              {connection ? (
+                <>
+                  <p>{t('requested')}: <code>{connection.requestedProvider}</code> / {t('active')}: <code>{connection.provider}</code>{connection.model ? <> (<code>{connection.model}</code>)</> : null}</p>
+                  <p>{connection.usedModel ? t('liveConnected') : t('fallbackUsed')}</p>
+                  <p className="muted">{connection.providerReason}</p>
+                </>
+              ) : (
+                <>
+                  <p>{t('notRun')}</p>
+                  <p className="muted">{t('currentSelected')}: <code>{provider}</code></p>
+                </>
+              )}
+            </div>
           </section>
         </div>
       )}
     </main>
   );
 }
+
 
 
 
