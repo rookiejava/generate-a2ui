@@ -105,6 +105,7 @@ export function App() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [connection, setConnection] = useState<ConnectionState | null>(null);
   const [runtime, setRuntime] = useState<RuntimeProviderInput>({});
+  const [secureMode, setSecureMode] = useState(true);
   const [persistSettings, setPersistSettings] = useState(false);
 
   useEffect(() => {
@@ -130,12 +131,19 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (secureMode) {
+      setPersistSettings(false);
+      localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      return;
+    }
+
     if (!persistSettings) {
       localStorage.removeItem(SETTINGS_STORAGE_KEY);
       return;
     }
+
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({persist: true, runtime}));
-  }, [persistSettings, runtime]);
+  }, [secureMode, persistSettings, runtime]);
 
   function updateRuntime(key: keyof RuntimeProviderInput, value: string) {
     setRuntime((prev) => ({...prev, [key]: value}));
@@ -206,7 +214,16 @@ export function App() {
           <summary>Model Settings</summary>
           <p className="muted">키/모델 설정은 Generate 요청 시에만 사용됩니다. 키 쿼터는 각 provider 정책을 따릅니다.</p>
           <label className="persist-row">
-            <input type="checkbox" checked={persistSettings} onChange={(event) => setPersistSettings(event.target.checked)} />
+            <input type="checkbox" checked={secureMode} onChange={(event) => setSecureMode(event.target.checked)} />
+            <span>보안 모드 (세션 메모리 only)</span>
+          </label>
+          <label className="persist-row">
+            <input
+              type="checkbox"
+              checked={persistSettings}
+              disabled={secureMode}
+              onChange={(event) => setPersistSettings(event.target.checked)}
+            />
             <span>이 브라우저에 설정 저장</span>
           </label>
           <div className="settings-grid">
