@@ -10,6 +10,8 @@
 - fallback generator를 현재 v0.9/v0.10 action schema에 맞게 수정
 - `.env.example`과 `docs/deployment.md` 추가
 - Vercel API runtime/maxDuration 설정 추가
+- `docs/operations.md`와 `scripts/provider-smoke.ts` 추가
+- `npm run smoke:provider -- fallback v0.10 ...` 실행 확인
 - `npm run typecheck` 통과
 - `npm run build` 통과
 - 실 provider 호출은 API 키 부재로 미검증 상태

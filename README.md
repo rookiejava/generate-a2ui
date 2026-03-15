@@ -7,6 +7,7 @@
 - [시스템 아키텍처](./docs/architecture.md)
 - [작업 계획 및 진행상황](./docs/plan.md)
 - [배포 가이드](./docs/deployment.md)
+- [운영 체크리스트](./docs/operations.md)
 - [Vercel 메모](./VERCEL.md)
 - [Provider 전략](./MODEL_PROVIDERS.md)
 
@@ -29,4 +30,10 @@ npm run dev
 
 ```bash
 npm run build
+```
+
+provider smoke test:
+
+```bash
+npm run smoke:provider -- openai v0.10 "로그인 화면 만들어줘"
 ```

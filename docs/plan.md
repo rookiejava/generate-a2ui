@@ -5,7 +5,7 @@
 ## 현재 상태
 
 - 날짜: 2026-03-15
-- 단계: 배포 준비 문서화 완료, 실환경 배포 대기
+- 단계: 운영 체크리스트 및 smoke test 스크립트 검증 완료
 - 상태: 진행 중
 
 ## 작업 목록
@@ -24,6 +24,8 @@
 | P10 | live provider adapter 구현 | 완료 | openai/gemini/claude 1차 연결 |
 | P11 | provider 실환경 호출 검증 | 대기 | 실제 API 키 필요 |
 | P12 | Vercel 배포 설정 문서화 | 완료 | `.env.example`, deployment guide |
+| P13 | 운영 체크리스트 및 smoke script 추가 | 완료 | `docs/operations.md`, `scripts/provider-smoke.ts` |
+| P14 | smoke script 실행 검증 | 완료 | `npm run smoke:provider -- fallback v0.10 ...` |
 
 ## 최근 업데이트
 
@@ -37,6 +39,8 @@
 - `npm install`, `npm run typecheck`, `npm run build` 검증을 완료함
 - OpenAI, Gemini, Claude용 live provider adapter와 validation retry 루프를 추가함
 - `.env.example`과 배포 가이드를 추가하고 Vercel 함수 runtime 설정을 명시함
+- 운영 체크리스트와 provider smoke test 스크립트를 추가함
+- fallback smoke test 실행을 통해 운영 테스트 엔트리포인트를 검증함
 
 ## 진행 규칙
 
