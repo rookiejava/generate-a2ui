@@ -1,13 +1,21 @@
 {
   "framework": "vite",
-  "routes": [
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "web/dist",
+  "functions": {
+    "api/*.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
