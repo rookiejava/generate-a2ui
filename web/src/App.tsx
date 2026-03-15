@@ -209,6 +209,25 @@ const TEXT: Record<Language, Record<string, string>> = {
   },
 };
 
+const ERROR_TEXT: Record<Language, Record<string, string>> = {
+  ko: {network: '네트워크 연결을 확인해 주세요.', version: '지원되지 않는 버전입니다. 버전을 다시 선택해 주세요.', provider: '지원되지 않는 모델 제공자 설정입니다.', schema: '스키마 검증에 실패했습니다. 소스 형식을 확인해 주세요.', runtime: '모델 호출 중 오류가 발생하여 fallback으로 전환되었을 수 있습니다.', unknown: '요청 처리 중 오류가 발생했습니다.'},
+  en: {network: 'Please check your network connection.', version: 'Unsupported version. Please select a valid version.', provider: 'Unsupported provider configuration.', schema: 'Schema validation failed. Please check the source format.', runtime: 'Model call failed and may have fallen back to the local generator.', unknown: 'An error occurred while processing the request.'},
+  es: {network: 'Verifica tu conexión de red.', version: 'Versión no compatible. Selecciona una versión válida.', provider: 'Configuración de proveedor no compatible.', schema: 'Falló la validación del esquema. Revisa el formato de la fuente.', runtime: 'La llamada al modelo falló y puede haber usado el generador fallback.', unknown: 'Ocurrió un error al procesar la solicitud.'},
+  ja: {network: 'ネットワーク接続を確認してください。', version: '未対応のバージョンです。対応バージョンを選択してください。', provider: '未対応のプロバイダ設定です。', schema: 'スキーマ検証に失敗しました。ソース形式を確認してください。', runtime: 'モデル呼び出しに失敗し、フォールバック生成に切り替わった可能性があります。', unknown: 'リクエスト処理中にエラーが発生しました。'},
+  zh: {network: '请检查网络连接。', version: '不支持的版本，请重新选择。', provider: '不支持的提供方配置。', schema: 'Schema 校验失败，请检查源码格式。', runtime: '模型调用失败，可能已切换到回退生成器。', unknown: '请求处理时发生错误。'},
+};
+
+function localizeApiError(rawMessage: string, language: Language): string {
+  const message = rawMessage.toLowerCase();
+  const text = ERROR_TEXT[language];
+  if (message.includes('failed to fetch') || message.includes('networkerror')) return text.network;
+  if (message.includes('unsupported a2ui version') || message.includes('unsupported version')) return text.version;
+  if (message.includes('unsupported provider')) return text.provider;
+  if (message.includes('validation') || message.includes('schema')) return text.schema;
+  if (message.includes('fallback') || message.includes('request failed with status')) return text.runtime;
+  return rawMessage || text.unknown;
+}
+
 function PreviewPane({preview, emptyLabel}: {preview: PreviewDocument | null; emptyLabel: string}) {
   if (!preview) return <div className="preview-shell empty">{emptyLabel}</div>;
 
@@ -363,7 +382,8 @@ export function App() {
       setPreview(next.preview);
       setValidation(next.validation);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : t('generateFailed'));
+      const message = error instanceof Error ? error.message : t('generateFailed');
+      setActionError(localizeApiError(message, language));
     } finally {
       setIsGenerating(false);
     }
@@ -377,7 +397,8 @@ export function App() {
       setValidation(result.validation);
       setPreview(result.preview);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : t('validateFailed'));
+      const message = error instanceof Error ? error.message : t('validateFailed');
+      setActionError(localizeApiError(message, language));
     } finally {
       setIsValidating(false);
     }
@@ -491,6 +512,9 @@ export function App() {
     </main>
   );
 }
+
+
+
 
 
 
