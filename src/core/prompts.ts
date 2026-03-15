@@ -2,6 +2,36 @@ import type {A2UIVersion} from './types.js';
 import {getAllVersionAnalyses} from './analysis.js';
 import {readVersionFile} from './loader.js';
 
+function outputContract(version: A2UIVersion, surfaceId: string): string[] {
+  if (version === 'v0.8') {
+    return [
+      'Output contract (strict):',
+      '- Return exactly one JSON object: {"messages": [...]}.',
+      '- messages MUST be an array of server-to-client message objects.',
+      '- The first message MUST include beginRendering with surfaceId and root.',
+      '- A following message MUST include surfaceUpdate with components.',
+      '- Optional dataModelUpdate is allowed when needed.',
+      '- Do NOT return components-only arrays. Do NOT return {} entries.',
+      '- Every message object must use valid v0.8 keys only.',
+      `- surfaceId must be "${surfaceId}" unless explicitly requested otherwise.`,
+    ];
+  }
+
+  return [
+    'Output contract (strict):',
+    '- Return exactly one JSON object: {"messages": [...]}.',
+    '- messages MUST be an array of server-to-client message objects.',
+    '- Include at least these message types in order:',
+    '  1) {"version":"' + version + '","createSurface":{...}}',
+    '  2) {"version":"' + version + '","updateComponents":{...}}',
+    '- Optional: {"version":"' + version + '","updateDataModel":{...}}',
+    '- Every message object MUST include "version":"' + version + '".',
+    '- Do NOT return components-only arrays. Do NOT return {} entries.',
+    '- Do NOT wrap in markdown. Return pure JSON only.',
+    `- surfaceId must be "${surfaceId}" unless explicitly requested otherwise.`,
+  ];
+}
+
 export async function buildSystemPrompt(version: A2UIVersion): Promise<string> {
   const analysis = getAllVersionAnalyses().find((entry) => entry.version === version);
   const protocol = await readVersionFile(version, 'docs/a2ui_protocol.md').catch(() => '');
@@ -28,9 +58,13 @@ export function buildUserPrompt(prompt: string, version: A2UIVersion, surfaceId 
   return [
     `Target version: ${version}`,
     `Surface id: ${surfaceId}`,
+    '',
+    ...outputContract(version, surfaceId),
+    '',
     'User request:',
     prompt,
     previousIssues.length > 0 ? `\nValidation issues from previous attempt:\n${previousIssues.map((issue) => `- ${issue}`).join('\n')}` : '',
-    '\nReturn a single JSON object with shape {"messages": [...]}.',
+    '',
+    'Final response must be one JSON object with shape {"messages": [...]}.',
   ].filter(Boolean).join('\n');
 }
