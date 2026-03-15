@@ -42,7 +42,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = getP
     return await fetch(url, {...init, signal: controller.signal});
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`Request timeout after ${timeoutMs}ms`);
+      throw new Error('Request timeout after ' + timeoutMs + 'ms');
     }
     throw error;
   } finally {
@@ -76,8 +76,14 @@ function parseJson(text: string): unknown[] {
   throw new Error('Model response was not a valid A2UI message list');
 }
 
+function previewRaw(text: string, max = 400): string {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (!compact) return '<empty>';
+  return compact.length > max ? compact.slice(0, max) + '...' : compact;
+}
+
 async function readErrorDetail(response: Response): Promise<string> {
-  const fallback = `${response.status}`;
+  const fallback = String(response.status);
   try {
     const text = await response.text();
     if (!text) return fallback;
@@ -89,10 +95,10 @@ async function readErrorDetail(response: Response): Promise<string> {
         ?? payload?.error?.status
         ?? payload?.message
         ?? payload?.error;
-      if (typeof detail === 'string' && detail.trim()) return `${response.status}: ${detail.trim()}`;
-      return `${response.status}: ${text.slice(0, 240)}`;
+      if (typeof detail === 'string' && detail.trim()) return response.status + ': ' + detail.trim();
+      return response.status + ': ' + text.slice(0, 240);
     } catch {
-      return `${response.status}: ${text.slice(0, 240)}`;
+      return response.status + ': ' + text.slice(0, 240);
     }
   } catch {
     return fallback;
@@ -126,20 +132,23 @@ async function callOpenAI(system: string, user: string, runtime?: ProviderRuntim
       },
     }),
   });
+
   if (!response.ok) {
     const detail = await readErrorDetail(response);
     throw new Error('OpenAI request failed (' + detail + ')');
   }
+
   const payload: any = await response.json();
-  return parseJson(payload.choices?.[0]?.message?.content ?? '');
+  const raw = String(payload.choices?.[0]?.message?.content ?? '');
+  try {
+    return parseJson(raw);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Invalid JSON payload';
+    throw new Error('OpenAI parse failure (' + reason + '); raw=' + previewRaw(raw));
+  }
 }
 
-async function requestGemini(
-  endpoint: string,
-  system: string,
-  user: string,
-  useSchema: boolean,
-): Promise<Response> {
+async function requestGemini(endpoint: string, system: string, user: string, useSchema: boolean): Promise<Response> {
   const generationConfig: Record<string, unknown> = {
     temperature: 0.2,
     responseMimeType: 'application/json',
@@ -179,7 +188,12 @@ async function callGemini(system: string, user: string, runtime?: ProviderRuntim
 
   const payload: any = await response.json();
   const text = payload.candidates?.[0]?.content?.parts?.map((part: any) => part.text ?? '').join('') ?? '';
-  return parseJson(text);
+  try {
+    return parseJson(text);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Invalid JSON payload';
+    throw new Error('Gemini parse failure (' + reason + '); raw=' + previewRaw(text));
+  }
 }
 
 async function callClaude(system: string, user: string, runtime?: ProviderRuntimeConfig): Promise<unknown[]> {
@@ -206,10 +220,12 @@ async function callClaude(system: string, user: string, runtime?: ProviderRuntim
       tool_choice: {type: 'tool', name: 'emit_a2ui_messages'},
     }),
   });
+
   if (!response.ok) {
     const detail = await readErrorDetail(response);
     throw new Error('Claude request failed (' + detail + ')');
   }
+
   const payload: any = await response.json();
   const toolUse = payload.content?.find((item: any) => item.type === 'tool_use' && item.name === 'emit_a2ui_messages');
   if (!toolUse?.input) throw new Error('Claude did not return tool output');
