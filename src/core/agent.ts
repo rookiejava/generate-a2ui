@@ -5,8 +5,15 @@ import {resolveProvider} from './providers.js';
 import {serializeMessages} from './serialize.js';
 import {validateMessages} from './validator.js';
 
+const LIVE_PROVIDER_ORDER = ['openai', 'gemini', 'claude'] as const;
+
 function issuesToLines(issues: {instancePath: string; message: string}[]): string[] {
   return issues.map((issue) => `${issue.instancePath}: ${issue.message}`);
+}
+
+function isQuotaError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return message.includes('quota exceeded') || message.includes('rate limit') || message.includes('429');
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -250,6 +257,41 @@ function normalizeLiveMessages(version: GenerateOptions['version'], surfaceId: s
   });
 }
 
+async function attemptLiveGeneration(
+  provider: typeof LIVE_PROVIDER_ORDER[number],
+  options: GenerateOptions,
+  surfaceId: string,
+): Promise<{provider: typeof LIVE_PROVIDER_ORDER[number]; model: string | undefined; messages: unknown[]; validation: Awaited<ReturnType<typeof validateMessages>>}> {
+  let messages = await generateWithLiveProvider(provider, options.version, options.prompt, surfaceId, options.runtime);
+  messages = normalizeLiveMessages(options.version, surfaceId, messages);
+  let validation = await validateMessages(options.version, messages);
+
+  if (!validation.valid && provider !== 'gemini') {
+    messages = await generateWithLiveProvider(
+      provider,
+      options.version,
+      options.prompt,
+      surfaceId,
+      options.runtime,
+      issuesToLines(validation.issues),
+    );
+    messages = normalizeLiveMessages(options.version, surfaceId, messages);
+    validation = await validateMessages(options.version, messages);
+  }
+
+  if (!validation.valid) {
+    const summary = issuesToLines(validation.issues).slice(0, 5).join('; ');
+    throw new Error(`Live provider output failed schema validation after retry (${summary})`);
+  }
+
+  return {
+    provider,
+    model: getLiveProviderModel(provider, options.runtime),
+    messages,
+    validation,
+  };
+}
+
 export async function generateA2ui(options: GenerateOptions): Promise<GenerationOutput> {
   const surfaceId = options.surfaceId ?? 'main';
   const resolution = resolveProvider(options.provider ?? 'auto', options.runtime);
@@ -262,45 +304,51 @@ export async function generateA2ui(options: GenerateOptions): Promise<Generation
 
   if (resolution.useModel && resolution.effective !== 'fallback') {
     try {
-      messages = await generateWithLiveProvider(resolution.effective, options.version, options.prompt, surfaceId, options.runtime);
-      messages = normalizeLiveMessages(options.version, surfaceId, messages);
-      let validation = await validateMessages(options.version, messages);
-
-      if (!validation.valid && resolution.effective !== 'gemini') {
-        messages = await generateWithLiveProvider(
-          resolution.effective,
-          options.version,
-          options.prompt,
-          surfaceId,
-          options.runtime,
-          issuesToLines(validation.issues),
-        );
-        messages = normalizeLiveMessages(options.version, surfaceId, messages);
-        validation = await validateMessages(options.version, messages);
-      }
-
-      if (!validation.valid) {
-        const summary = issuesToLines(validation.issues).slice(0, 5).join('; ');
-        throw new Error(`Live provider output failed schema validation after retry (${summary})`);
-      }
+      const attempt = await attemptLiveGeneration(resolution.effective as typeof LIVE_PROVIDER_ORDER[number], options, surfaceId);
 
       return {
         version: options.version,
         prompt: options.prompt,
         requestedProvider: resolution.requested,
-        provider: actualProvider,
+        provider: attempt.provider,
         providerReason,
-        model,
-        messages,
-        serialized: serializeMessages(messages, options.format ?? 'json'),
-        validation,
-        usedModel,
+        model: attempt.model,
+        messages: attempt.messages,
+        serialized: serializeMessages(attempt.messages, options.format ?? 'json'),
+        validation: attempt.validation,
+        usedModel: true,
       };
     } catch (error) {
+      const detail = error instanceof Error ? error.message : 'Unknown runtime error';
+
+      if (options.provider === 'auto' && isQuotaError(error)) {
+        for (const candidate of LIVE_PROVIDER_ORDER) {
+          if (candidate === resolution.effective) continue;
+          const candidateResolution = resolveProvider(candidate, options.runtime);
+          if (!candidateResolution.useModel || candidateResolution.effective === 'fallback') continue;
+
+          try {
+            const failover = await attemptLiveGeneration(candidate, options, surfaceId);
+            return {
+              version: options.version,
+              prompt: options.prompt,
+              requestedProvider: resolution.requested,
+              provider: failover.provider,
+              providerReason: `Auto failover switched from ${resolution.effective} to ${candidate} after quota/rate-limit error on ${resolution.effective}`,
+              model: failover.model,
+              messages: failover.messages,
+              serialized: serializeMessages(failover.messages, options.format ?? 'json'),
+              validation: failover.validation,
+              usedModel: true,
+            };
+          } catch {
+          }
+        }
+      }
+
       actualProvider = 'fallback';
       usedModel = false;
       model = undefined;
-      const detail = error instanceof Error ? error.message : 'Unknown runtime error';
       providerReason = `Live call to ${resolution.effective} failed at runtime (${detail}); fallback generator was used`;
     }
   }
