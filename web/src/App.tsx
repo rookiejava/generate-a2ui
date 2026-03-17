@@ -1,5 +1,5 @@
-import {useEffect, useState} from 'react';
-import {fetchAnalysis, generate, validate, type PreviewDocument, type RuntimeProviderInput} from './api';
+import {useEffect, useRef, useState} from 'react';
+import {fetchAnalysis, generate, validate, type DefaultCredentialAvailability, type PreviewDocument, type RuntimeProviderInput} from './api';
 import type {A2UIVersion, ProviderId, ValidationResult, VersionAnalysis} from '../../src/core/types';
 
 const DEFAULT_PROMPT_BY_LANG: Record<Language, string> = {
@@ -47,8 +47,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     studio: 'Studio', settings: 'Settings', title: 'Prompt to versioned A2UI', settingsTitle: 'Model Settings',
     settingsDesc: '키/모델 설정은 Generate 요청 시에만 사용됩니다. 키 쿼터는 각 provider 정책을 따릅니다.',
     secureMode: '보안 모드 (세션 메모리 only)', persist: '이 브라우저에 설정 저장',
-    connected: '연결 상태', notRun: '아직 Generate를 실행하지 않았습니다.', currentSelected: '현재 선택',
+    connected: '연결 상태', notRun: '아직 Generate를 실행하지 않았습니다.', currentSelected: '현재 선택', defaultKeys: '기본 서버 키',
     liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use', quotaExceeded: '쿼터 초과로 fallback이 사용되었습니다.',
+    configured: '설정됨', missing: '없음',
     prompt: 'Prompt', source: 'A2UI Source', versionNotes: 'Version Notes', rendererNotes: 'Renderer Notes',
     validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected', schemaUnknown: 'Validation required',
     generate: 'Generate', generating: 'Generating...', validate: 'Validate', validating: 'Validating...',
@@ -60,8 +61,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     studio: 'Studio', settings: 'Settings', title: 'Prompt to versioned A2UI', settingsTitle: 'Model Settings',
     settingsDesc: 'Keys and model settings are used only for Generate requests. Quotas follow each provider policy.',
     secureMode: 'Secure mode (session memory only)', persist: 'Save settings in this browser',
-    connected: 'Connection Status', notRun: 'Generate has not run yet.', currentSelected: 'Current selection',
+    connected: 'Connection Status', notRun: 'Generate has not run yet.', currentSelected: 'Current selection', defaultKeys: 'Default Server Keys',
     liveConnected: 'Live model connected', fallbackUsed: 'Fallback generator in use', quotaExceeded: 'Fallback is active due to quota exceeded.',
+    configured: 'configured', missing: 'missing',
     prompt: 'Prompt', source: 'A2UI Source', versionNotes: 'Version Notes', rendererNotes: 'Renderer Notes',
     validation: 'Validation', schemaValid: 'Schema valid', schemaInvalid: 'Schema issues detected', schemaUnknown: 'Validation required',
     generate: 'Generate', generating: 'Generating...', validate: 'Validate', validating: 'Validating...',
@@ -73,8 +75,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     studio: 'Estudio', settings: 'Configuración', title: 'Prompt a A2UI versionado', settingsTitle: 'Configuración de modelo',
     settingsDesc: 'Las claves y modelos se usan solo en Generate. Las cuotas dependen de cada proveedor.',
     secureMode: 'Modo seguro (solo memoria de sesión)', persist: 'Guardar configuración en este navegador',
-    connected: 'Estado de conexión', notRun: 'Aún no se ejecutó Generate.', currentSelected: 'Selección actual',
+    connected: 'Estado de conexión', notRun: 'Aún no se ejecutó Generate.', currentSelected: 'Selección actual', defaultKeys: 'Claves del servidor',
     liveConnected: 'Modelo en vivo conectado', fallbackUsed: 'Usando generador fallback', quotaExceeded: 'Fallback activo por cuota excedida.',
+    configured: 'configuradas', missing: 'ausentes',
     prompt: 'Prompt', source: 'Fuente A2UI', versionNotes: 'Notas de versión', rendererNotes: 'Notas de renderizador',
     validation: 'Validación', schemaValid: 'Esquema válido', schemaInvalid: 'Problemas de esquema detectados', schemaUnknown: 'Validación requerida',
     generate: 'Generar', generating: 'Generando...', validate: 'Validar', validating: 'Validando...',
@@ -86,8 +89,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     studio: 'スタジオ', settings: '設定', title: 'Prompt to versioned A2UI', settingsTitle: 'モデル設定',
     settingsDesc: 'キーとモデル設定は Generate リクエスト時のみ使用されます。クォータは各プロバイダのポリシーに従います。',
     secureMode: 'セキュアモード（セッションメモリのみ）', persist: 'このブラウザに設定を保存',
-    connected: '接続状態', notRun: 'まだ Generate を実行していません。', currentSelected: '現在の選択',
+    connected: '接続状態', notRun: 'まだ Generate を実行していません。', currentSelected: '現在の選択', defaultKeys: 'サーバー既定キー',
     liveConnected: 'ライブモデル接続中', fallbackUsed: 'フォールバック生成を使用中', quotaExceeded: 'クォータ超過のためフォールバックを使用中です。',
+    configured: '設定済み', missing: '未設定',
     prompt: 'プロンプト', source: 'A2UI ソース', versionNotes: 'バージョンノート', rendererNotes: 'レンダラーノート',
     validation: '検証', schemaValid: 'スキーマは有効です', schemaInvalid: 'スキーマ問題を検出しました', schemaUnknown: '検証が必要です',
     generate: '生成', generating: '生成中...', validate: '検証', validating: '検証中...',
@@ -99,8 +103,9 @@ const TEXT: Record<Language, Record<string, string>> = {
     studio: '工作台', settings: '设置', title: 'Prompt 到版本化 A2UI', settingsTitle: '模型设置',
     settingsDesc: '密钥和模型设置仅在 Generate 请求时使用。配额遵循各提供商策略。',
     secureMode: '安全模式（仅会话内存）', persist: '在此浏览器保存设置',
-    connected: '连接状态', notRun: '尚未执行 Generate。', currentSelected: '当前选择',
+    connected: '连接状态', notRun: '尚未执行 Generate。', currentSelected: '当前选择', defaultKeys: '默认服务器密钥',
     liveConnected: '实时模型已连接', fallbackUsed: '正在使用回退生成器', quotaExceeded: '由于配额超限，正在使用回退生成器。',
+    configured: '已配置', missing: '未配置',
     prompt: '提示词', source: 'A2UI 源码', versionNotes: '版本说明', rendererNotes: '渲染说明',
     validation: '校验', schemaValid: 'Schema 有效', schemaInvalid: '检测到 Schema 问题', schemaUnknown: '需要先校验',
     generate: '生成', generating: '生成中...', validate: '校验', validating: '校验中...',
@@ -111,12 +116,33 @@ const TEXT: Record<Language, Record<string, string>> = {
 };
 
 const ERROR_TEXT: Record<Language, Record<string, string>> = {
-  ko: {network: '네트워크 연결을 확인해 주세요.', version: '지원되지 않는 버전입니다. 버전을 다시 선택해 주세요.', provider: '지원되지 않는 모델 제공자 설정입니다.', schema: '스키마 검증에 실패했습니다. 소스 형식을 확인해 주세요.', runtime: '모델 호출 중 오류가 발생하여 fallback으로 전환되었을 수 있습니다.', unknown: '요청 처리 중 오류가 발생했습니다.'},
-  en: {network: 'Please check your network connection.', version: 'Unsupported version. Please select a valid version.', provider: 'Unsupported provider configuration.', schema: 'Schema validation failed. Please check the source format.', runtime: 'Model call failed and may have fallen back to the local generator.', unknown: 'An error occurred while processing the request.'},
-  es: {network: 'Verifica tu conexión de red.', version: 'Versión no compatible. Selecciona una versión válida.', provider: 'Configuración de proveedor no compatible.', schema: 'Falló la validación del esquema. Revisa el formato de la fuente.', runtime: 'La llamada al modelo falló y puede haber usado el generador fallback.', unknown: 'Ocurrió un error al procesar la solicitud.'},
-  ja: {network: 'ネットワーク接続を確認してください。', version: '未対応のバージョンです。対応バージョンを選択してください。', provider: '未対応のプロバイダ設定です。', schema: 'スキーマ検証に失敗しました。ソース形式を確認してください。', runtime: 'モデル呼び出しに失敗し、フォールバック生成に切り替わった可能性があります。', unknown: 'リクエスト処理中にエラーが発生しました。'},
-  zh: {network: '请检查网络连接。', version: '不支持的版本，请重新选择。', provider: '不支持的提供方配置。', schema: 'Schema 校验失败，请检查源码格式。', runtime: '模型调用失败，可能已切换到回退生成器。', unknown: '请求处理时发生错误。'},
+  ko: {network: '네트워크 연결을 확인해 주세요.', version: '지원되지 않는 버전입니다. 버전을 다시 선택해 주세요.', provider: '지원되지 않는 모델 제공자 설정입니다.', schema: '스키마 검증에 실패했습니다. 소스 형식을 확인해 주세요.', quota: '모델 제공자 쿼터가 초과되었습니다. 다른 키를 사용하거나 잠시 후 다시 시도해 주세요.', runtime: '모델 호출 중 오류가 발생하여 fallback으로 전환되었을 수 있습니다.', unknown: '요청 처리 중 오류가 발생했습니다.'},
+  en: {network: 'Please check your network connection.', version: 'Unsupported version. Please select a valid version.', provider: 'Unsupported provider configuration.', schema: 'Schema validation failed. Please check the source format.', quota: 'Provider quota has been exceeded. Use a different key or try again later.', runtime: 'Model call failed and may have fallen back to the local generator.', unknown: 'An error occurred while processing the request.'},
+  es: {network: 'Verifica tu conexión de red.', version: 'Versión no compatible. Selecciona una versión válida.', provider: 'Configuración de proveedor no compatible.', schema: 'Falló la validación del esquema. Revisa el formato de la fuente.', quota: 'Se excedió la cuota del proveedor. Usa otra clave o inténtalo de nuevo más tarde.', runtime: 'La llamada al modelo falló y puede haber usado el generador fallback.', unknown: 'Ocurrió un error al procesar la solicitud.'},
+  ja: {network: 'ネットワーク接続を確認してください。', version: '未対応のバージョンです。対応バージョンを選択してください。', provider: '未対応のプロバイダ設定です。', schema: 'スキーマ検証に失敗しました。ソース形式を確認してください。', quota: 'プロバイダのクォータを超過しました。別のキーを使うか、時間をおいて再試行してください。', runtime: 'モデル呼び出しに失敗し、フォールバック生成に切り替わった可能性があります。', unknown: 'リクエスト処理中にエラーが発生しました。'},
+  zh: {network: '请检查网络连接。', version: '不支持的版本，请重新选择。', provider: '不支持的提供方配置。', schema: 'Schema 校验失败，请检查源码格式。', quota: '提供方配额已超限。请改用其他密钥或稍后重试。', runtime: '模型调用失败，可能已切换到回退生成器。', unknown: '请求处理时发生错误。'},
 };
+
+function extractRetryAfterSeconds(reason: string): number | null {
+  const match = reason.match(/retry in\s+(\d+(?:\.\d+)?)s/i);
+  if (!match) return null;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) return null;
+  return Math.max(1, Math.ceil(value));
+}
+
+function quotaMessage(language: Language, reason: string): string {
+  const base = ERROR_TEXT[language].quota;
+  const retryAfter = extractRetryAfterSeconds(reason);
+  if (!retryAfter) return base;
+
+  if (language === 'ko') return `${base} 약 ${retryAfter}초 후 다시 시도해 주세요.`;
+  if (language === 'en') return `${base} Try again in about ${retryAfter} seconds.`;
+  if (language === 'es') return `${base} Inténtalo de nuevo en unos ${retryAfter} segundos.`;
+  if (language === 'ja') return `${base} 約${retryAfter}秒後に再試行してください。`;
+  if (language === 'zh') return `${base} 请在约 ${retryAfter} 秒后重试。`;
+  return base;
+}
 
 function localizeApiError(rawMessage: string, language: Language): string {
   const message = rawMessage.toLowerCase();
@@ -124,6 +150,7 @@ function localizeApiError(rawMessage: string, language: Language): string {
   if (message.includes('failed to fetch') || message.includes('networkerror')) return text.network;
   if (message.includes('unsupported a2ui version') || message.includes('unsupported version')) return text.version;
   if (message.includes('unsupported provider')) return text.provider;
+  if (isQuotaExceededReason(message)) return quotaMessage(language, rawMessage);
   if (message.includes('validation') || message.includes('schema')) return text.schema;
   if (message.includes('fallback') || message.includes('request failed with status')) return text.runtime;
   return rawMessage || text.unknown;
@@ -132,6 +159,11 @@ function localizeApiError(rawMessage: string, language: Language): string {
 function isQuotaExceededReason(reason: string): boolean {
   const message = reason.toLowerCase();
   return message.includes('quota exceeded') || message.includes('rate limit') || message.includes('429');
+}
+
+function localizeProviderReason(reason: string, language: Language): string {
+  if (isQuotaExceededReason(reason)) return quotaMessage(language, reason);
+  return reason;
 }
 
 function PreviewPane({preview, emptyLabel}: {preview: PreviewDocument | null; emptyLabel: string}) {
@@ -195,6 +227,7 @@ export function App() {
   const [version, setVersion] = useState<A2UIVersion>('v0.10');
   const [provider, setProvider] = useState<ProviderId>('auto');
   const [providers, setProviders] = useState<ProviderId[]>(['auto', 'fallback', 'openai', 'gemini', 'claude']);
+  const [defaultCredentials, setDefaultCredentials] = useState<DefaultCredentialAvailability>({openai: false, gemini: false, claude: false});
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT_BY_LANG.ko);
   const [source, setSource] = useState('[]');
   const [analysis, setAnalysis] = useState<VersionAnalysis[]>([]);
@@ -207,6 +240,12 @@ export function App() {
   const [runtime, setRuntime] = useState<RuntimeProviderInput>({});
   const [secureMode, setSecureMode] = useState(true);
   const [persistSettings, setPersistSettings] = useState(false);
+  const openaiApiKeyRef = useRef<HTMLInputElement | null>(null);
+  const openaiModelRef = useRef<HTMLInputElement | null>(null);
+  const geminiApiKeyRef = useRef<HTMLInputElement | null>(null);
+  const geminiModelRef = useRef<HTMLInputElement | null>(null);
+  const anthropicApiKeyRef = useRef<HTMLInputElement | null>(null);
+  const anthropicModelRef = useRef<HTMLInputElement | null>(null);
 
   const t = (key: string) => TEXT[language][key] ?? key;
 
@@ -214,6 +253,7 @@ export function App() {
     fetchAnalysis().then((payload) => {
       setAnalysis(payload.versions);
       setProviders(payload.providers);
+      setDefaultCredentials(payload.defaultCredentials);
     }).catch(() => undefined);
   }, []);
 
@@ -258,6 +298,42 @@ export function App() {
     setRuntime((prev) => ({...prev, [key]: value}));
   }
 
+  function collectRuntimeInput(): RuntimeProviderInput {
+    const next: RuntimeProviderInput = {
+      openaiApiKey: openaiApiKeyRef.current?.value ?? runtime.openaiApiKey,
+      openaiModel: openaiModelRef.current?.value ?? runtime.openaiModel,
+      geminiApiKey: geminiApiKeyRef.current?.value ?? runtime.geminiApiKey,
+      geminiModel: geminiModelRef.current?.value ?? runtime.geminiModel,
+      anthropicApiKey: anthropicApiKeyRef.current?.value ?? runtime.anthropicApiKey,
+      anthropicModel: anthropicModelRef.current?.value ?? runtime.anthropicModel,
+    };
+
+    return Object.fromEntries(
+      Object.entries(next).filter(([, value]) => typeof value === 'string' && value.trim().length > 0),
+    ) as RuntimeProviderInput;
+  }
+
+  function syncRuntimeFromInputs() {
+    const next = collectRuntimeInput();
+    setRuntime((prev) => {
+      const prevEntries = Object.entries(prev).filter(([, value]) => typeof value === 'string' && value.trim().length > 0);
+      const nextEntries = Object.entries(next);
+      if (prevEntries.length === nextEntries.length && prevEntries.every(([key, value]) => next[key as keyof RuntimeProviderInput] === value)) {
+        return prev;
+      }
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    if (page !== 'settings') return;
+
+    syncRuntimeFromInputs();
+    const timer = window.setTimeout(syncRuntimeFromInputs, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [page]);
+
   function handleDownloadSource() {
     const payload = source.trim();
     if (!payload) {
@@ -283,9 +359,14 @@ export function App() {
     setValidation(null);
     setPreview(null);
     try {
-      const result = await generate(prompt, version, provider, runtime);
+      const effectiveRuntime = collectRuntimeInput();
+      setRuntime(effectiveRuntime);
+      const result = await generate(prompt, version, provider, effectiveRuntime);
       setSource(result.serialized);
       setConnection({requestedProvider: result.requestedProvider, provider: result.provider, providerReason: result.providerReason, model: result.model, usedModel: result.usedModel});
+      if (!result.usedModel && isQuotaExceededReason(result.providerReason)) {
+        setActionError(quotaMessage(language, result.providerReason));
+      }
       const next = await validate(version, result.serialized);
       setPreview(next.preview);
       setValidation(next.validation);
@@ -322,6 +403,11 @@ export function App() {
   const canDownload = hasGenerated && Boolean(validation?.valid) && Boolean(source.trim());
   const validationState = validation == null ? 'neutral' : validation.valid ? 'ok' : 'bad';
   const validationLabel = validation == null ? t('schemaUnknown') : validation.valid ? t('schemaValid') : t('schemaInvalid');
+  const defaultCredentialSummary = [
+    `OpenAI ${defaultCredentials.openai ? t('configured') : t('missing')}`,
+    `Gemini ${defaultCredentials.gemini ? t('configured') : t('missing')}`,
+    `Claude ${defaultCredentials.claude ? t('configured') : t('missing')}`,
+  ].join(' / ');
 
   return (
     <main className="workspace-shell">
@@ -350,12 +436,12 @@ export function App() {
                 <span>{t('persist')}</span>
               </label>
               <div className="settings-grid">
-                <label><span>OpenAI Key</span><input type="password" value={runtime.openaiApiKey ?? ''} onChange={(event) => updateRuntime('openaiApiKey', event.target.value)} placeholder="sk-..." /></label>
-                <label><span>OpenAI Model</span><input value={runtime.openaiModel ?? ''} onChange={(event) => updateRuntime('openaiModel', event.target.value)} placeholder="gpt-4.1-mini" /></label>
-                <label><span>Gemini Key</span><input type="password" value={runtime.geminiApiKey ?? ''} onChange={(event) => updateRuntime('geminiApiKey', event.target.value)} placeholder="AIza..." /></label>
-                <label><span>Gemini Model</span><input value={runtime.geminiModel ?? ''} onChange={(event) => updateRuntime('geminiModel', event.target.value)} placeholder="gemini-2.5-flash" /></label>
-                <label><span>Claude Key</span><input type="password" value={runtime.anthropicApiKey ?? ''} onChange={(event) => updateRuntime('anthropicApiKey', event.target.value)} placeholder="sk-ant-..." /></label>
-                <label><span>Claude Model</span><input value={runtime.anthropicModel ?? ''} onChange={(event) => updateRuntime('anthropicModel', event.target.value)} placeholder="claude-3-5-sonnet-latest" /></label>
+                <label><span>OpenAI Key</span><input ref={openaiApiKeyRef} type="password" value={runtime.openaiApiKey ?? ''} onChange={(event) => updateRuntime('openaiApiKey', event.target.value)} onInput={(event) => updateRuntime('openaiApiKey', (event.target as HTMLInputElement).value)} placeholder="sk-..." autoComplete="off" /></label>
+                <label><span>OpenAI Model</span><input ref={openaiModelRef} value={runtime.openaiModel ?? ''} onChange={(event) => updateRuntime('openaiModel', event.target.value)} onInput={(event) => updateRuntime('openaiModel', (event.target as HTMLInputElement).value)} placeholder="gpt-4.1-mini" autoComplete="off" /></label>
+                <label><span>Gemini Key</span><input ref={geminiApiKeyRef} type="password" value={runtime.geminiApiKey ?? ''} onChange={(event) => updateRuntime('geminiApiKey', event.target.value)} onInput={(event) => updateRuntime('geminiApiKey', (event.target as HTMLInputElement).value)} placeholder="AIza..." autoComplete="off" /></label>
+                <label><span>Gemini Model</span><input ref={geminiModelRef} value={runtime.geminiModel ?? ''} onChange={(event) => updateRuntime('geminiModel', event.target.value)} onInput={(event) => updateRuntime('geminiModel', (event.target as HTMLInputElement).value)} placeholder="gemini-2.5-flash" autoComplete="off" /></label>
+                <label><span>Claude Key</span><input ref={anthropicApiKeyRef} type="password" value={runtime.anthropicApiKey ?? ''} onChange={(event) => updateRuntime('anthropicApiKey', event.target.value)} onInput={(event) => updateRuntime('anthropicApiKey', (event.target as HTMLInputElement).value)} placeholder="sk-ant-..." autoComplete="off" /></label>
+                <label><span>Claude Model</span><input ref={anthropicModelRef} value={runtime.anthropicModel ?? ''} onChange={(event) => updateRuntime('anthropicModel', event.target.value)} onInput={(event) => updateRuntime('anthropicModel', (event.target as HTMLInputElement).value)} placeholder="claude-3-5-sonnet-latest" autoComplete="off" /></label>
               </div>
             </section>
             <section className="settings-section">
@@ -426,12 +512,14 @@ export function App() {
                   <p>{t('requested')}: <code>{connection.requestedProvider}</code> / {t('active')}: <code>{connection.provider}</code>{connection.model ? <> (<code>{connection.model}</code>)</> : null}</p>
                   <p>{connection.usedModel ? t('liveConnected') : t('fallbackUsed')}</p>
                   {!connection.usedModel && isQuotaExceededReason(connection.providerReason) ? <p className="quota-note">{t('quotaExceeded')}</p> : null}
-                  <p className="muted">{connection.providerReason}</p>
+                  <p className="muted">{localizeProviderReason(connection.providerReason, language)}</p>
+                  <p className="muted">{t('defaultKeys')}: {defaultCredentialSummary}</p>
                 </>
               ) : (
                 <>
                   <p>{t('notRun')}</p>
                   <p className="muted">{t('currentSelected')}: <code>{provider}</code></p>
+                  <p className="muted">{t('defaultKeys')}: {defaultCredentialSummary}</p>
                 </>
               )}
             </div>
@@ -441,13 +529,6 @@ export function App() {
     </main>
   );
 }
-
-
-
-
-
-
-
 
 
 

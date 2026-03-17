@@ -21,6 +21,12 @@ export interface RuntimeProviderInput {
   anthropicVersion?: string;
 }
 
+export interface DefaultCredentialAvailability {
+  openai: boolean;
+  gemini: boolean;
+  claude: boolean;
+}
+
 async function parseJsonOrText(response: Response): Promise<any> {
   const text = await response.text();
   if (!text) return null;
@@ -47,7 +53,7 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-export async function fetchAnalysis(): Promise<{versions: VersionAnalysis[]; providers: ProviderId[]}> {
+export async function fetchAnalysis(): Promise<{versions: VersionAnalysis[]; providers: ProviderId[]; defaultCredentials: DefaultCredentialAvailability}> {
   return requestJson('/api/analysis');
 }
 

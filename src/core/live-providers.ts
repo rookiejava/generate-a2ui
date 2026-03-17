@@ -14,17 +14,6 @@ const OUTPUT_SCHEMA = {
   required: ['messages'],
 };
 
-const GEMINI_OUTPUT_SCHEMA = {
-  type: 'OBJECT',
-  properties: {
-    messages: {
-      type: 'ARRAY',
-      items: {type: 'OBJECT'},
-    },
-  },
-  required: ['messages'],
-};
-
 function getProviderTimeoutMs(): number {
   const parsed = Number(process.env.PROVIDER_TIMEOUT_MS ?? '45000');
   if (!Number.isFinite(parsed)) return 45000;
@@ -80,6 +69,19 @@ function previewRaw(text: string, max = 400): string {
   const compact = text.replace(/\s+/g, ' ').trim();
   if (!compact) return '<empty>';
   return compact.length > max ? compact.slice(0, max) + '...' : compact;
+}
+
+function buildGeminiJsonRepairPrompt(user: string): string {
+  return [
+    user,
+    '',
+    'IMPORTANT RETRY INSTRUCTIONS:',
+    '- Your previous answer was invalid JSON.',
+    '- Return one valid JSON object only.',
+    '- Do not include trailing commas.',
+    '- Do not include markdown fences.',
+    '- Ensure every array and object is properly closed.',
+  ].join('\n');
 }
 
 async function readErrorDetail(response: Response): Promise<string> {
@@ -148,13 +150,11 @@ async function callOpenAI(system: string, user: string, runtime?: ProviderRuntim
   }
 }
 
-async function requestGemini(endpoint: string, system: string, user: string, useSchema: boolean): Promise<Response> {
+async function requestGemini(endpoint: string, system: string, user: string): Promise<Response> {
   const generationConfig: Record<string, unknown> = {
     temperature: 0.2,
     responseMimeType: 'application/json',
   };
-
-  if (useSchema) generationConfig.responseSchema = GEMINI_OUTPUT_SCHEMA;
 
   return fetchWithTimeout(endpoint, {
     method: 'POST',
@@ -173,26 +173,35 @@ async function callGemini(system: string, user: string, runtime?: ProviderRuntim
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${getGeminiModel(runtime)}:generateContent?key=${apiKey}`;
 
-  let response: Response;
-  try {
-    response = await requestGemini(endpoint, system, user, true);
-  } catch (error) {
-    if (!isTimeoutError(error)) throw error;
-    response = await requestGemini(endpoint, system, user, false);
-  }
+  const requestAndParse = async (prompt: string): Promise<unknown[]> => {
+    const response = await requestGemini(endpoint, system, prompt).catch((error) => {
+      if (isTimeoutError(error)) throw error;
+      throw error;
+    });
 
-  if (!response.ok) {
-    const detail = await readErrorDetail(response);
-    throw new Error('Gemini request failed (' + detail + ')');
-  }
+    if (!response.ok) {
+      const detail = await readErrorDetail(response);
+      throw new Error('Gemini request failed (' + detail + ')');
+    }
 
-  const payload: any = await response.json();
-  const text = payload.candidates?.[0]?.content?.parts?.map((part: any) => part.text ?? '').join('') ?? '';
+    const payload: any = await response.json();
+    const text = payload.candidates?.[0]?.content?.parts?.map((part: any) => part.text ?? '').join('') ?? '';
+    try {
+      return parseJson(text);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'Invalid JSON payload';
+      throw new Error('Gemini parse failure (' + reason + '); raw=' + previewRaw(text));
+    }
+  };
+
   try {
-    return parseJson(text);
+    return await requestAndParse(user);
   } catch (error) {
-    const reason = error instanceof Error ? error.message : 'Invalid JSON payload';
-    throw new Error('Gemini parse failure (' + reason + '); raw=' + previewRaw(text));
+    if (!(error instanceof Error) || !error.message.startsWith('Gemini parse failure')) throw error;
+    return requestAndParse(buildGeminiJsonRepairPrompt(user)).catch((retryError) => {
+      if (retryError instanceof Error) throw retryError;
+      throw error;
+    });
   }
 }
 
