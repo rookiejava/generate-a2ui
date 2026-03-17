@@ -3,31 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
-import {getAllVersionAnalyses} from '../core/analysis.js';
-import {generateA2ui} from '../core/agent.js';
-import {createPreviewDocument} from '../core/preview.js';
-import {parseMessages} from '../core/serialize.js';
-import type {A2UIVersion, ProviderId, ProviderRuntimeConfig} from '../core/types.js';
-import {validateMessages} from '../core/validator.js';
-
-function parseRuntimeConfig(value: unknown): ProviderRuntimeConfig | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as ProviderRuntimeConfig
-    : undefined;
-}
-
-function hasConfiguredEnv(name: string): boolean {
-  const value = process.env[name];
-  return typeof value === 'string' && value.trim().length > 0;
-}
-
-function getDefaultProviderAvailability() {
-  return {
-    openai: hasConfiguredEnv('OPENAI_API_KEY'),
-    gemini: hasConfiguredEnv('GEMINI_API_KEY'),
-    claude: hasConfiguredEnv('ANTHROPIC_API_KEY'),
-  };
-}
+import {createAnalysisResponse, handleGenerateRequest, handleValidateRequest} from './handlers.js';
 
 export function createServer() {
   const app = express();
@@ -36,26 +12,12 @@ export function createServer() {
   app.use(express.json({limit: '2mb'}));
 
   app.get('/api/analysis', (_req, res) => {
-    res.json({
-      versions: getAllVersionAnalyses(),
-      providers: ['auto', 'fallback', 'openai', 'gemini', 'claude'],
-      defaultCredentials: getDefaultProviderAvailability(),
-    });
+    res.json(createAnalysisResponse());
   });
 
   app.post('/api/generate', async (req, res) => {
     try {
-      const version = (req.body.version ?? 'v0.10') as A2UIVersion;
-      const provider = (req.body.provider ?? 'auto') as ProviderId;
-      const runtime = parseRuntimeConfig(req.body.runtime);
-
-      res.json(await generateA2ui({
-        version,
-        provider,
-        runtime,
-        prompt: String(req.body.prompt ?? ''),
-        format: req.body.format === 'yaml' ? 'yaml' : 'json',
-      }));
+      res.json(await handleGenerateRequest(req.body, Boolean(req.body?.debug)));
     } catch (error) {
       res.status(400).json({error: error instanceof Error ? error.message : 'Unknown error'});
     }
@@ -63,14 +25,7 @@ export function createServer() {
 
   app.post('/api/validate', async (req, res) => {
     try {
-      const version = (req.body.version ?? 'v0.10') as A2UIVersion;
-      const messages = parseMessages(String(req.body.source ?? '[]'));
-      const validation = await validateMessages(version, messages);
-
-      res.json({
-        validation,
-        preview: createPreviewDocument(version, messages as any[]),
-      });
+      res.json(await handleValidateRequest(req.body));
     } catch (error) {
       res.status(400).json({error: error instanceof Error ? error.message : 'Unknown error'});
     }

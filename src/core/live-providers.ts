@@ -44,7 +44,7 @@ function getOpenAIModel(runtime?: ProviderRuntimeConfig): string {
 }
 
 function getGeminiModel(runtime?: ProviderRuntimeConfig): string {
-  return runtime?.geminiModel ?? process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
+  return runtime?.geminiModel ?? process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite';
 }
 
 function getClaudeModel(runtime?: ProviderRuntimeConfig): string {
